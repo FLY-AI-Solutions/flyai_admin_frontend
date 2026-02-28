@@ -332,11 +332,28 @@
             btnElement.classList.add('tab-active', 'text-gray-800');
         }
 
+        // Remove getAuthHeaders() entirely, we don't need it anymore!
+
         async function apiCall(endpoint, method = 'GET', body = null) {
             try {
-                const options = { method, headers: getAuthHeaders() };
-                if (body) options.body = JSON.stringify(body);
-                const res = await fetch(`${API_BASE}${endpoint}`, options);
+                // 1. Always append the token to the URL
+                const url = `${API_BASE}${endpoint}?token=${adminToken}`;
+                
+                const options = { method: method };
+                
+                // 2. If it's a POST/PUT, convert the body object to Form Data
+                if (body && (method === 'POST' || method === 'PUT')) {
+                    const formData = new URLSearchParams();
+                    for (const key in body) {
+                        if(body[key] !== null && body[key] !== undefined) {
+                            formData.append(key, body[key]);
+                        }
+                    }
+                    options.body = formData;
+                    // Notice: We do NOT set headers. The browser handles it automatically.
+                }
+                
+                const res = await fetch(url, options);
                 
                 if (res.status === 401) {
                     alert("Session expired. Please log in again.");
