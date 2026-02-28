@@ -12,209 +12,306 @@
         .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
     </style>
 </head>
-<body class="bg-gray-50 font-sans text-gray-800 h-screen flex overflow-hidden">
+<body class="bg-gray-50 font-sans text-gray-800 h-screen overflow-hidden relative">
 
-    <aside class="w-64 bg-slate-900 text-white flex flex-col h-full shadow-lg">
-        <div class="p-6 border-b border-slate-700">
-            <h1 class="text-2xl font-bold text-blue-400 tracking-wider">FLY AI <span class="text-white text-sm font-light block">Admin Portal</span></h1>
+    <!-- ==================== LOGIN OVERLAY ==================== -->
+    <div id="login-overlay" class="absolute inset-0 bg-slate-900 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-96 text-center border-t-4 border-blue-600">
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">Admin Authentication</h2>
+            <p class="text-slate-500 text-sm mb-6">FLY AI Solutions Portal</p>
+            
+            <form id="loginForm" onsubmit="event.preventDefault(); verifyToken();">
+                <input type="password" id="admin-token-input" placeholder="Enter Secure Admin Token" required
+                       class="w-full border border-gray-300 p-3 rounded mb-4 focus:ring-2 focus:ring-blue-500 outline-none text-center">
+                
+                <button type="submit" id="login-btn" 
+                        class="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 transition font-semibold flex justify-center items-center">
+                    Access Dashboard
+                </button>
+            </form>
+            
+            <div id="login-error" class="text-red-600 mt-4 text-sm font-medium hidden">
+                <i class="fas fa-exclamation-circle mr-1"></i> Invalid Token. Please try again.
+            </div>
         </div>
-        <nav class="flex-1 px-4 py-6 space-y-2">
-            <button onclick="switchView('projects')" id="nav-projects" class="w-full flex items-center gap-3 text-left p-3 rounded-lg bg-blue-600 hover:bg-blue-500 transition">
-                <i class="fas fa-project-diagram w-5"></i> Projects
-            </button>
-            <button onclick="switchView('customers')" id="nav-customers" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
-                <i class="fas fa-building w-5"></i> Customers
-            </button>
-            <button onclick="switchView('employees')" id="nav-employees" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
-                <i class="fas fa-users w-5"></i> Team
-            </button>
-            <button onclick="switchView('invoices')" id="nav-invoices" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
-                <i class="fas fa-file-invoice-dollar w-5"></i> Invoicing
-            </button>
-        </nav>
-        <div class="p-4 border-t border-slate-700 text-sm text-slate-400 text-center">
-            Welcome back, Abrar
-        </div>
-    </aside>
+    </div>
 
-    <main class="flex-1 overflow-y-auto p-8 bg-gray-50">
-        
-        <section id="view-projects" class="view-section">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">Projects</h2>
-                <button onclick="document.getElementById('new-project-form').classList.toggle('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
-                    <i class="fas fa-plus mr-2"></i> New Project
+    <!-- ==================== MAIN DASHBOARD (Hidden on load) ==================== -->
+    <div id="dashboard-wrapper" class="h-full flex hidden-view">
+        <aside class="w-64 bg-slate-900 text-white flex flex-col h-full shadow-lg">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-2xl font-bold text-blue-400 tracking-wider">FLY AI <span class="text-white text-sm font-light block">Admin Portal</span></h1>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <button onclick="switchView('projects')" id="nav-projects" class="w-full flex items-center gap-3 text-left p-3 rounded-lg bg-blue-600 hover:bg-blue-500 transition">
+                    <i class="fas fa-project-diagram w-5"></i> Projects
+                </button>
+                <button onclick="switchView('customers')" id="nav-customers" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
+                    <i class="fas fa-building w-5"></i> Customers
+                </button>
+                <button onclick="switchView('employees')" id="nav-employees" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
+                    <i class="fas fa-users w-5"></i> Team
+                </button>
+                <button onclick="switchView('invoices')" id="nav-invoices" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
+                    <i class="fas fa-file-invoice-dollar w-5"></i> Invoicing
+                </button>
+            </nav>
+            <div class="p-4 border-t border-slate-700 text-sm flex justify-between items-center">
+                <span class="text-slate-400">Welcome back</span>
+                <button onclick="logout()" class="text-red-400 hover:text-red-300 transition" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
+        </aside>
 
-            <div id="new-project-form" class="hidden bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
-                <h3 class="text-lg font-semibold mb-4">Create New Project</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <input type="text" id="proj-name" placeholder="Project Name" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
-                    <input type="text" id="proj-desc" placeholder="Brief Description" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
-                    <select id="proj-customer" class="border p-2 rounded w-full bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="">Select Customer...</option>
-                        </select>
-                </div>
-                <button onclick="createProject()" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700">Save Project</button>
-            </div>
-
-            <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                </div>
-        </section>
-
-        <section id="view-project-details" class="view-section hidden-view">
-            <button onclick="switchView('projects')" class="text-slate-500 hover:text-blue-600 mb-4 transition">
-                <i class="fas fa-arrow-left mr-1"></i> Back to Projects
-            </button>
-            <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-                <div class="flex justify-between items-start mb-6">
-                    <div>
-                        <h2 id="detail-proj-name" class="text-3xl font-bold text-gray-800 mb-2">Project Name</h2>
-                        <p id="detail-proj-desc" class="text-gray-500">Project description goes here.</p>
-                    </div>
-                    <span id="detail-proj-status" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Active</span>
-                </div>
-
-                <div class="flex space-x-6 border-b border-gray-200 mb-6">
-                    <button class="pb-2 tab-active" onclick="switchInnerTab('tasks', this)">Tasks</button>
-                    <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('team', this)">Team / NDAs</button>
-                    <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('billing', this)">Billing Info</button>
-                </div>
-
-                <div id="inner-tasks">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">Task Management</h3>
-                        <div class="flex gap-2">
-                            <input type="text" id="new-task-title" placeholder="New task title..." class="border p-2 rounded text-sm w-64">
-                            <button onclick="addTask()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">Add Task</button>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50 text-gray-600 text-sm">
-                                    <th class="p-3 border-b">Task Description</th>
-                                    <th class="p-3 border-b w-32">Status</th>
-                                    <th class="p-3 border-b w-32 text-center">Calendar</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tasks-table-body">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div id="inner-team" class="hidden-view">
-                    <h3 class="text-lg font-semibold mb-4">Assigned Team & NDAs</h3>
-                    <p class="text-gray-500 text-sm">Select employees/contractors and generate standard NDA documents for this project.</p>
-                    </div>
-
-                <div id="inner-billing" class="hidden-view">
-                    <h3 class="text-lg font-semibold mb-4">Customer Billing Details</h3>
-                    <div id="project-customer-info" class="bg-gray-50 p-4 rounded border">
-                        </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="view-customers" class="view-section hidden-view">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Customers</h2>
-            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-                <h3 class="text-lg font-semibold mb-4">Add New Customer</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <input type="text" id="cust-biz" placeholder="Business Name" class="border p-2 rounded">
-                    <input type="text" id="cust-person" placeholder="Contact Person" class="border p-2 rounded">
-                    <input type="email" id="cust-email" placeholder="Email" class="border p-2 rounded">
-                    <input type="text" id="cust-address" placeholder="Billing Address" class="border p-2 rounded">
-                </div>
-                <button onclick="addCustomer()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save Customer</button>
-            </div>
+        <main class="flex-1 overflow-y-auto p-8 bg-gray-50">
             
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th class="p-4 border-b">Business</th>
-                            <th class="p-4 border-b">Contact</th>
-                            <th class="p-4 border-b">Email</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customers-table-body" class="divide-y divide-gray-100">
-                        </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="view-employees" class="view-section hidden-view">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Team Directory</h2>
-            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-                <h3 class="text-lg font-semibold mb-4">Add Team Member</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <input type="text" id="emp-name" placeholder="Full Name" class="border p-2 rounded">
-                    <input type="email" id="emp-email" placeholder="Email Address" class="border p-2 rounded">
-                    <select id="emp-role" class="border p-2 rounded bg-white">
-                        <option value="Employee">Employee</option>
-                        <option value="Contractor">Contractor</option>
-                        <option value="Sub-contractor">Sub-contractor</option>
-                    </select>
+            <section id="view-projects" class="view-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800">Projects</h2>
+                    <button onclick="document.getElementById('new-project-form').classList.toggle('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
+                        <i class="fas fa-plus mr-2"></i> New Project
+                    </button>
                 </div>
-                <button onclick="addEmployee()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Member</button>
-            </div>
-        </section>
 
-        <section id="view-invoices" class="view-section hidden-view">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Generate Invoice</h2>
-            <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200 max-w-2xl">
-                <form id="invoiceForm" class="space-y-6">
-                    <div class="grid grid-cols-2 gap-6">
+                <div id="new-project-form" class="hidden bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
+                    <h3 class="text-lg font-semibold mb-4">Create New Project</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <input type="text" id="proj-name" placeholder="Project Name" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="text" id="proj-desc" placeholder="Brief Description" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
+                        <select id="proj-customer" class="border p-2 rounded w-full bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Select Customer...</option>
+                        </select>
+                    </div>
+                    <button onclick="createProject()" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700">Save Project</button>
+                </div>
+
+                <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            </section>
+
+            <section id="view-project-details" class="view-section hidden-view">
+                <button onclick="switchView('projects')" class="text-slate-500 hover:text-blue-600 mb-4 transition">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Projects
+                </button>
+                <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                    <div class="flex justify-between items-start mb-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Select Project</label>
-                            <select id="inv-project" required class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none bg-white">
+                            <h2 id="detail-proj-name" class="text-3xl font-bold text-gray-800 mb-2">Project Name</h2>
+                            <p id="detail-proj-desc" class="text-gray-500">Project description goes here.</p>
+                        </div>
+                        <span id="detail-proj-status" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Active</span>
+                    </div>
+
+                    <div class="flex space-x-6 border-b border-gray-200 mb-6">
+                        <button class="pb-2 tab-active" onclick="switchInnerTab('tasks', this)">Tasks</button>
+                        <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('team', this)">Team / NDAs</button>
+                        <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('billing', this)">Billing Info</button>
+                    </div>
+
+                    <div id="inner-tasks">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold">Task Management</h3>
+                            <div class="flex gap-2">
+                                <input type="text" id="new-task-title" placeholder="New task title..." class="border p-2 rounded text-sm w-64">
+                                <button onclick="addTask()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">Add Task</button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50 text-gray-600 text-sm">
+                                        <th class="p-3 border-b">Task Description</th>
+                                        <th class="p-3 border-b w-32">Status</th>
+                                        <th class="p-3 border-b w-32 text-center">Calendar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tasks-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="inner-team" class="hidden-view">
+                        <h3 class="text-lg font-semibold mb-4">Assigned Team & NDAs</h3>
+                        <p class="text-gray-500 text-sm">Select employees/contractors and generate standard NDA documents for this project.</p>
+                    </div>
+
+                    <div id="inner-billing" class="hidden-view">
+                        <h3 class="text-lg font-semibold mb-4">Customer Billing Details</h3>
+                        <div id="project-customer-info" class="bg-gray-50 p-4 rounded border">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-customers" class="view-section hidden-view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Customers</h2>
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
+                    <h3 class="text-lg font-semibold mb-4">Add New Customer</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <input type="text" id="cust-biz" placeholder="Business Name" class="border p-2 rounded">
+                        <input type="text" id="cust-person" placeholder="Contact Person" class="border p-2 rounded">
+                        <input type="email" id="cust-email" placeholder="Email" class="border p-2 rounded">
+                        <input type="text" id="cust-address" placeholder="Billing Address" class="border p-2 rounded">
+                    </div>
+                    <button onclick="addCustomer()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save Customer</button>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th class="p-4 border-b">Business</th>
+                                <th class="p-4 border-b">Contact</th>
+                                <th class="p-4 border-b">Email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-table-body" class="divide-y divide-gray-100">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="view-employees" class="view-section hidden-view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Team Directory</h2>
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
+                    <h3 class="text-lg font-semibold mb-4">Add Team Member</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <input type="text" id="emp-name" placeholder="Full Name" class="border p-2 rounded">
+                        <input type="email" id="emp-email" placeholder="Email Address" class="border p-2 rounded">
+                        <select id="emp-role" class="border p-2 rounded bg-white">
+                            <option value="Employee">Employee</option>
+                            <option value="Contractor">Contractor</option>
+                            <option value="Sub-contractor">Sub-contractor</option>
+                        </select>
+                    </div>
+                    <button onclick="addEmployee()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Member</button>
+                </div>
+            </section>
+
+            <section id="view-invoices" class="view-section hidden-view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Generate Invoice</h2>
+                <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200 max-w-2xl">
+                    <form id="invoiceForm" class="space-y-6">
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Select Project</label>
+                                <select id="inv-project" required class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none bg-white">
                                 </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Amount (USD)</label>
+                                <input type="number" id="inv-amount" step="0.01" required placeholder="0.00" class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none">
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Amount (USD)</label>
-                            <input type="number" id="inv-amount" step="0.01" required placeholder="0.00" class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Description / Line Item</label>
+                            <input type="text" id="inv-desc" required placeholder="e.g., Milestone 1 Completion" class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none">
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Description / Line Item</label>
-                        <input type="text" id="inv-desc" required placeholder="e.g., Milestone 1 Completion" class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none">
-                    </div>
-                    <div class="pt-2">
-                        <button type="submit" id="submitInvBtn" class="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition flex justify-center items-center">
-                            <i class="fas fa-paper-plane mr-2"></i> Generate & Email Stripe Link
-                        </button>
-                    </div>
-                </form>
-                <div id="inv-status" class="mt-4 p-4 rounded hidden"></div>
-            </div>
-        </section>
+                        <div class="pt-2">
+                            <button type="submit" id="submitInvBtn" class="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition flex justify-center items-center">
+                                <i class="fas fa-paper-plane mr-2"></i> Generate & Email Stripe Link
+                            </button>
+                        </div>
+                    </form>
+                    <div id="inv-status" class="mt-4 p-4 rounded hidden"></div>
+                </div>
+            </section>
 
-    </main>
+        </main>
+    </div>
 
     <script>
-        // CONFIGURATION: Update this to your server's public IP or Domain
+        // CONFIGURATION
         const API_BASE = "http://jerin-api.flyai.online/x004/api";
-        const TOKEN = "51QgJ1sPUPs4f9DIg4OzitIWV4wYdSyspYyCyX0cDWylmCoV5qi0WdWPyRxwekw4aDGLK1vJM7xRjpZ7XktiVaZ7k00HqzzI2gD_ABRAR";
         
-        const headers = {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${TOKEN}`
+        // --- AUTHENTICATION LOGIC ---
+        let adminToken = sessionStorage.getItem('flyai_admin_token') || null;
+
+        function getAuthHeaders() {
+            return {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${adminToken}`
+            };
+        }
+
+        async function verifyToken() {
+            const inputVal = document.getElementById('admin-token-input').value;
+            if(!inputVal) return;
+
+            const btn = document.getElementById('login-btn');
+            const errorMsg = document.getElementById('login-error');
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Verifying...';
+            btn.disabled = true;
+            errorMsg.classList.add('hidden');
+
+            // Temporarily set token to test
+            adminToken = inputVal;
+            
+            try {
+                // Test the token against a protected endpoint
+                const res = await fetch(`${API_BASE}/projects`, { headers: getAuthHeaders() });
+                
+                if (res.ok) {
+                    sessionStorage.setItem('flyai_admin_token', adminToken);
+                    showDashboard();
+                } else {
+                    throw new Error("Invalid Token");
+                }
+            } catch (err) {
+                adminToken = null;
+                sessionStorage.removeItem('flyai_admin_token');
+                errorMsg.classList.remove('hidden');
+                document.getElementById('admin-token-input').value = '';
+            } finally {
+                btn.innerHTML = 'Access Dashboard';
+                btn.disabled = false;
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('login-overlay').classList.add('hidden-view');
+            document.getElementById('dashboard-wrapper').classList.remove('hidden-view');
+            // Load base data
+            loadCustomers().then(() => loadProjects());
+        }
+
+        function logout() {
+            adminToken = null;
+            sessionStorage.removeItem('flyai_admin_token');
+            document.getElementById('login-overlay').classList.remove('hidden-view');
+            document.getElementById('dashboard-wrapper').classList.add('hidden-view');
+            document.getElementById('admin-token-input').value = '';
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        // Auto-login check on page load
+        window.onload = async () => {
+            if (adminToken) {
+                try {
+                    const res = await fetch(`${API_BASE}/projects`, { headers: getAuthHeaders() });
+                    if (res.ok) {
+                        showDashboard();
+                    } else {
+                        logout(); // Token expired or changed
+                    }
+                } catch (e) {
+                    logout();
+                }
+            }
         };
 
-        // State Management
+        // --- DASHBOARD LOGIC ---
         let currentProjectId = null;
         let globalCustomers = [];
         let globalProjects = [];
 
-        // --- NAVIGATION LOGIC ---
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-view'));
             document.getElementById(`view-${viewId}`).classList.remove('hidden-view');
             
-            // Update sidebar UI
             document.querySelectorAll('aside nav button').forEach(btn => {
                 btn.classList.remove('bg-blue-600', 'text-white');
                 btn.classList.add('text-slate-300');
@@ -222,7 +319,6 @@
             document.getElementById(`nav-${viewId}`).classList.add('bg-blue-600', 'text-white');
             document.getElementById(`nav-${viewId}`).classList.remove('text-slate-300');
 
-            // Fetch fresh data when switching tabs
             if(viewId === 'projects') loadProjects();
             if(viewId === 'customers') loadCustomers();
             if(viewId === 'invoices') populateInvoiceDropdowns();
@@ -236,27 +332,29 @@
             btnElement.classList.add('tab-active', 'text-gray-800');
         }
 
-        // --- API FETCH WRAPPERS ---
         async function apiCall(endpoint, method = 'GET', body = null) {
             try {
-                const options = { method, headers };
+                const options = { method, headers: getAuthHeaders() };
                 if (body) options.body = JSON.stringify(body);
                 const res = await fetch(`${API_BASE}${endpoint}`, options);
+                
+                if (res.status === 401) {
+                    alert("Session expired. Please log in again.");
+                    logout();
+                    return null;
+                }
+                
                 if (!res.ok) throw new Error(await res.text());
                 return await res.json();
             } catch (err) {
                 console.error("API Error:", err);
-                alert("An error occurred. Check console for details.");
+                alert("An error occurred connecting to the backend.");
                 return null;
             }
         }
 
-        // --- DATA LOADING & RENDERING ---
-        
         // 1. Customers
         async function loadCustomers() {
-            // Note: You need to add a GET /api/customers endpoint to your main.py for this to work fully dynamically
-            // For now, assuming it returns an array of customer objects.
             globalCustomers = await apiCall('/customers') || []; 
             const tbody = document.getElementById('customers-table-body');
             tbody.innerHTML = globalCustomers.map(c => `
@@ -267,7 +365,6 @@
                 </tr>
             `).join('');
             
-            // Populate project creation dropdown
             const select = document.getElementById('proj-customer');
             select.innerHTML = '<option value="">Select Customer...</option>' + 
                 globalCustomers.map(c => `<option value="${c.id}">${c.business_name}</option>`).join('');
@@ -365,14 +462,13 @@
 
         async function updateTaskStatus(taskId, newStatus) {
             await apiCall(`/tasks/${taskId}`, 'PUT', { status: newStatus });
-            loadTasks(); // Refresh colors
+            loadTasks(); 
         }
 
-        // ICS Generator
         function downloadICS(taskTitle) {
             const now = new Date();
             const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1); // Default schedule to tomorrow
+            tomorrow.setDate(tomorrow.getDate() + 1); 
             
             const formatDate = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
             
@@ -397,7 +493,6 @@
             const btn = document.getElementById('submitInvBtn');
             const statusDiv = document.getElementById('inv-status');
             
-            // Get selected project and find associated customer details
             const projSelect = document.getElementById('inv-project');
             const projectId = projSelect.value;
             const custId = projSelect.options[projSelect.selectedIndex].getAttribute('data-cust');
@@ -432,13 +527,6 @@
                 statusDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i> Error generating invoice.`;
             }
         });
-
-        // Initialize App
-        window.onload = () => {
-            // Load base data silently in background
-            loadCustomers().then(() => loadProjects());
-        };
-
     </script>
 </body>
 </html>
