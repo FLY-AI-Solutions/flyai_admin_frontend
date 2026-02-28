@@ -383,6 +383,25 @@
             }
         }
 
+        // Add Employee
+        async function addEmployee() {
+            const data = {
+                name: document.getElementById('emp-name').value,
+                email: document.getElementById('emp-email').value,
+                role: document.getElementById('emp-role').value
+            };
+            
+            if(!data.name || !data.email) return alert("Name and Email are required");
+        
+            if(await apiCall('/employees', 'POST', data)) {
+                document.getElementById('emp-name').value = '';
+                document.getElementById('emp-email').value = '';
+                document.getElementById('emp-role').value = 'Employee'; // Reset to default
+                alert("Team member added successfully!");
+                // Note: You might want to add a loadEmployees() function later to refresh a table
+            }
+        }
+
         // 2. Projects
         async function loadProjects() {
             globalProjects = await apiCall('/projects') || [];
