@@ -229,12 +229,7 @@
         // --- AUTHENTICATION LOGIC ---
         let adminToken = sessionStorage.getItem('flyai_admin_token') || null;
 
-        function getAuthHeaders() {
-            return {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${adminToken}`
-            };
-        }
+        // NOTE: getAuthHeaders() has been completely removed to prevent OPTIONS preflights.
 
         async function verifyToken() {
             const inputVal = document.getElementById('admin-token-input').value;
@@ -247,12 +242,11 @@
             btn.disabled = true;
             errorMsg.classList.add('hidden');
 
-            // Temporarily set token to test
             adminToken = inputVal;
             
             try {
-                // Test the token against a protected endpoint
-                const res = await fetch(`${API_BASE}/projects`, { headers: getAuthHeaders() });
+                // TOKEN IS NOW IN THE URL, NO HEADERS ATTACHED
+                const res = await fetch(`${API_BASE}/projects?token=${adminToken}`);
                 
                 if (res.ok) {
                     sessionStorage.setItem('flyai_admin_token', adminToken);
@@ -274,7 +268,6 @@
         function showDashboard() {
             document.getElementById('login-overlay').classList.add('hidden-view');
             document.getElementById('dashboard-wrapper').classList.remove('hidden-view');
-            // Load base data
             loadCustomers().then(() => loadProjects());
         }
 
@@ -287,15 +280,15 @@
             document.getElementById('login-error').classList.add('hidden');
         }
 
-        // Auto-login check on page load
         window.onload = async () => {
             if (adminToken) {
                 try {
-                    const res = await fetch(`${API_BASE}/projects`, { headers: getAuthHeaders() });
+                    // TOKEN IS NOW IN THE URL, NO HEADERS ATTACHED
+                    const res = await fetch(`${API_BASE}/projects?token=${adminToken}`);
                     if (res.ok) {
                         showDashboard();
                     } else {
-                        logout(); // Token expired or changed
+                        logout(); 
                     }
                 } catch (e) {
                     logout();
@@ -322,6 +315,7 @@
             if(viewId === 'projects') loadProjects();
             if(viewId === 'customers') loadCustomers();
             if(viewId === 'invoices') populateInvoiceDropdowns();
+            // Note: Add logic here later if you create a loadEmployees() function
         }
 
         function switchInnerTab(tabName, btnElement) {
@@ -332,16 +326,14 @@
             btnElement.classList.add('tab-active', 'text-gray-800');
         }
 
-        // Remove getAuthHeaders() entirely, we don't need it anymore!
-
+        // --- THE MAGIC SIMPLE REQUEST FUNCTION ---
         async function apiCall(endpoint, method = 'GET', body = null) {
             try {
-                // 1. Always append the token to the URL
+                // 1. Always append token to URL
                 const url = `${API_BASE}${endpoint}?token=${adminToken}`;
-                
                 const options = { method: method };
                 
-                // 2. If it's a POST/PUT, convert the body object to Form Data
+                // 2. Format body as Form Data instead of JSON to avoid Preflight
                 if (body && (method === 'POST' || method === 'PUT')) {
                     const formData = new URLSearchParams();
                     for (const key in body) {
@@ -350,9 +342,9 @@
                         }
                     }
                     options.body = formData;
-                    // Notice: We do NOT set headers. The browser handles it automatically.
                 }
                 
+                // 3. Notice: NO HEADERS ATTACHED AT ALL
                 const res = await fetch(url, options);
                 
                 if (res.status === 401) {
@@ -400,31 +392,12 @@
             }
         }
 
-        // Add Employee
-        async function addEmployee() {
-            const data = {
-                name: document.getElementById('emp-name').value,
-                email: document.getElementById('emp-email').value,
-                role: document.getElementById('emp-role').value
-            };
-            
-            if(!data.name || !data.email) return alert("Name and Email are required");
-        
-            if(await apiCall('/employees', 'POST', data)) {
-                document.getElementById('emp-name').value = '';
-                document.getElementById('emp-email').value = '';
-                document.getElementById('emp-role').value = 'Employee'; // Reset to default
-                alert("Team member added successfully!");
-                // Note: You might want to add a loadEmployees() function later to refresh a table
-            }
-        }
-
         // 2. Projects
         async function loadProjects() {
             globalProjects = await apiCall('/projects') || [];
             const container = document.getElementById('projects-container');
             container.innerHTML = globalProjects.map(p => `
-                <div onclick="openProject('${p.id}', '${p.name.replace(/'/g, "\\'")}', '${p.description.replace(/'/g, "\\'")}')" 
+                <div onclick="openProject('${p.id}', '${p.name.replace(/'/g, "\\'")}', '${(p.description || '').replace(/'/g, "\\'")}')" 
                      class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-blue-400 transition relative">
                     <h3 class="text-xl font-bold mb-2 text-gray-800">${p.name}</h3>
                     <p class="text-gray-500 text-sm mb-4 line-clamp-2">${p.description || 'No description'}</p>
@@ -517,6 +490,24 @@
             link.click();
         }
 
+        // Missing Employee logic added!
+        async function addEmployee() {
+            const data = {
+                name: document.getElementById('emp-name').value,
+                email: document.getElementById('emp-email').value,
+                role: document.getElementById('emp-role').value
+            };
+            
+            if(!data.name || !data.email) return alert("Name and Email are required");
+
+            if(await apiCall('/employees', 'POST', data)) {
+                document.getElementById('emp-name').value = '';
+                document.getElementById('emp-email').value = '';
+                document.getElementById('emp-role').value = 'Employee';
+                alert("Team member added successfully!");
+            }
+        }
+
         // 4. Invoicing
         function populateInvoiceDropdowns() {
             const projSelect = document.getElementById('inv-project');
@@ -563,6 +554,6 @@
                 statusDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i> Error generating invoice.`;
             }
         });
-    </script>
+</script>
 </body>
 </html>
