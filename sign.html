@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Contract — FLY AI Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <style>
+        .sig-font { font-family: 'Dancing Script', cursive; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; padding: 0 !important; }
+            #doc-card { box-shadow: none !important; border: none !important; border-radius: 0 !important; }
+            .print-header { display: block !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+
+    <!-- Loading -->
+    <div id="view-loading" class="text-center py-32 text-gray-400">
+        <i class="fas fa-spinner fa-spin text-4xl mb-4 block"></i>
+        <p>Loading contract...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="view-error" class="hidden max-w-md mx-auto text-center py-32">
+        <i class="fas fa-exclamation-triangle text-5xl text-red-300 mb-6 block"></i>
+        <h2 class="text-xl font-bold text-gray-700 mb-2">Contract Not Found</h2>
+        <p class="text-gray-400">This link may be invalid or has expired.</p>
+    </div>
+
+    <!-- Main -->
+    <div id="view-main" class="hidden max-w-3xl mx-auto">
+
+        <!-- Top bar (screen only) -->
+        <div class="no-print bg-slate-900 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
+            <div>
+                <p class="text-blue-400 font-bold text-lg tracking-wide">FLY AI Solutions</p>
+                <p class="text-slate-400 text-xs mt-0.5">Contract Signing Portal</p>
+            </div>
+            <button onclick="window.print()"
+                class="flex items-center gap-2 bg-white text-slate-800 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition">
+                <i class="fas fa-print"></i> Print / Save PDF
+            </button>
+        </div>
+
+        <!-- Document -->
+        <div id="doc-card" class="bg-white shadow-sm rounded-b-xl px-10 py-12">
+
+            <!-- Print-only header -->
+            <div class="print-header hidden mb-8 pb-6 border-b border-gray-200 text-center">
+                <h1 class="text-2xl font-bold text-gray-900">FLY AI Solutions</h1>
+                <p class="text-gray-500 text-sm mt-1">Contract Agreement</p>
+            </div>
+
+            <!-- Meta -->
+            <div class="mb-8 pb-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2" id="meta-project"></h2>
+                <div class="flex flex-wrap gap-x-8 gap-y-1 text-sm text-gray-500">
+                    <span><span class="font-medium text-gray-700">For:</span> <span id="meta-employee"></span></span>
+                    <span><span class="font-medium text-gray-700">Prepared:</span> <span id="meta-date"></span></span>
+                </div>
+            </div>
+
+            <!-- Contract body -->
+            <pre id="contract-body" class="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed font-sans mb-10"></pre>
+
+            <!-- Signature section -->
+            <div class="border-t-2 border-dashed border-gray-300 pt-8">
+                <h3 class="font-semibold text-gray-700 mb-1">Digital Signature</h3>
+
+                <!-- Sign form (shown when pending) -->
+                <div id="sign-form">
+                    <p class="text-sm text-gray-500 mb-5">
+                        Type your full legal name below. By signing you confirm you have read and agree to all terms above.
+                    </p>
+                    <label class="block text-xs text-gray-400 uppercase tracking-wide mb-1">Full Legal Name</label>
+                    <input type="text" id="sig-input" placeholder="e.g. John Smith"
+                        class="no-print w-full border-b-2 border-gray-400 pb-2 text-lg outline-none focus:border-blue-500 bg-transparent transition mb-4"
+                        oninput="updatePreview(this.value)">
+                    <div id="sig-preview" class="sig-font text-3xl text-blue-700 min-h-[3rem] mb-6 text-gray-300 italic">
+                        Your signature will appear here
+                    </div>
+                    <button onclick="submitSignature()" id="sign-btn"
+                        class="no-print bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2">
+                        <i class="fas fa-pen-nib"></i> Sign Contract
+                    </button>
+                    <p id="sign-error" class="hidden text-red-600 text-sm mt-3"></p>
+                </div>
+
+                <!-- Already-signed block -->
+                <div id="signed-block" class="hidden">
+                    <div class="sig-font text-4xl text-blue-700 mb-3" id="final-sig"></div>
+                    <p class="text-sm text-gray-500">Signed by: <span id="final-name" class="font-semibold text-gray-700"></span></p>
+                    <p class="text-sm text-gray-500">Date: <span id="final-date" class="font-semibold text-gray-700"></span></p>
+                    <p class="mt-4 text-green-600 font-semibold text-sm">
+                        <i class="fas fa-check-circle mr-1"></i>This contract has been digitally signed.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://127.0.0.1:8000/x004/api'
+            : 'https://jerin-api.flyai.online/x004/api';
+
+        const token = new URLSearchParams(window.location.search).get('token');
+
+        async function loadContract() {
+            if (!token) { showError(); return; }
+            try {
+                const res = await fetch(`${API_BASE}/sign/${token}`);
+                if (!res.ok) { showError(); return; }
+                const data = await res.json();
+                render(data);
+            } catch {
+                showError();
+            }
+        }
+
+        function render(data) {
+            document.getElementById('meta-project').textContent = `${data.project_name} — Contract`;
+            document.getElementById('meta-employee').textContent = data.employee_name;
+            const prepared = new Date(data.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('meta-date').textContent = prepared;
+            document.getElementById('contract-body').textContent = data.contract_text;
+
+            if (data.status === 'Signed') {
+                showSignedState(data.signature_text, data.employee_name, data.signed_at);
+            }
+
+            document.getElementById('view-loading').classList.add('hidden');
+            document.getElementById('view-main').classList.remove('hidden');
+        }
+
+        function showSignedState(sig, name, date) {
+            document.getElementById('sign-form').classList.add('hidden');
+            document.getElementById('signed-block').classList.remove('hidden');
+            document.getElementById('final-sig').textContent = sig;
+            document.getElementById('final-name').textContent = name;
+            document.getElementById('final-date').textContent = new Date(date).toLocaleString('en-US', {
+                year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        function showError() {
+            document.getElementById('view-loading').classList.add('hidden');
+            document.getElementById('view-error').classList.remove('hidden');
+        }
+
+        function updatePreview(val) {
+            const preview = document.getElementById('sig-preview');
+            if (val.trim()) {
+                preview.textContent = val;
+                preview.classList.remove('text-gray-300', 'italic');
+                preview.classList.add('text-blue-700');
+            } else {
+                preview.textContent = 'Your signature will appear here';
+                preview.classList.add('text-gray-300', 'italic');
+                preview.classList.remove('text-blue-700');
+            }
+        }
+
+        async function submitSignature() {
+            const sig = document.getElementById('sig-input').value.trim();
+            const errorEl = document.getElementById('sign-error');
+            if (!sig) {
+                errorEl.textContent = 'Please type your full name to sign.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            errorEl.classList.add('hidden');
+
+            const btn = document.getElementById('sign-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing...';
+
+            try {
+                const body = new URLSearchParams({ signature_text: sig });
+                const res = await fetch(`${API_BASE}/sign/${token}`, { method: 'POST', body });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Signing failed');
+                }
+                showSignedState(sig, document.getElementById('meta-employee').textContent, new Date().toISOString());
+            } catch (e) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-pen-nib"></i> Sign Contract';
+                errorEl.textContent = e.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        loadContract();
+    </script>
+</body>
+</html>

@@ -133,8 +133,38 @@
                     </div>
 
                     <div id="inner-team" class="hidden-view">
-                        <h3 class="text-lg font-semibold mb-4">Team & NDAs</h3>
-                        <div id="project-team-list"></div>
+                        <div class="flex justify-between items-center mb-5">
+                            <h3 class="text-lg font-semibold">Team & Contracts</h3>
+                            <div class="flex gap-2 items-center">
+                                <select id="add-member-select" class="border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]">
+                                    <option value="">Add team member...</option>
+                                </select>
+                                <button onclick="addProjectMember()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
+                                    <i class="fas fa-plus mr-1"></i>Add
+                                </button>
+                            </div>
+                        </div>
+                        <div id="project-team-list" class="space-y-3 mb-4"></div>
+                        <!-- Inline contract editor -->
+                        <div id="contract-editor" class="hidden mt-4 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Contract for <span id="contract-for-name" class="text-blue-700"></span></h4>
+                                    <p class="text-xs text-gray-500 mt-0.5">Edit then send for digital signature.</p>
+                                </div>
+                                <button onclick="closeContractEditor()" class="text-gray-400 hover:text-red-500 transition mt-0.5"><i class="fas fa-times"></i></button>
+                            </div>
+                            <textarea id="contract-text-area" rows="18"
+                                class="w-full border border-gray-300 rounded p-3 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none resize-y bg-white"></textarea>
+                            <div class="mt-4 flex gap-3 items-center">
+                                <button onclick="sendContract()" id="send-contract-btn"
+                                    class="bg-blue-600 text-white px-5 py-2 rounded font-semibold text-sm hover:bg-blue-700 transition">
+                                    <i class="fas fa-paper-plane mr-2"></i>Send for Signature
+                                </button>
+                                <button onclick="closeContractEditor()" class="text-gray-500 hover:text-gray-700 text-sm">Cancel</button>
+                                <span id="contract-send-status" class="text-sm ml-1"></span>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="inner-billing" class="hidden-view">
@@ -165,6 +195,7 @@
                                 <th class="p-4 border-b">Contact</th>
                                 <th class="p-4 border-b">Email</th>
                                 <th class="p-4 border-b">Billing Address</th>
+                                <th class="p-4 border-b w-16"></th>
                             </tr>
                         </thead>
                         <tbody id="customers-table-body" class="divide-y divide-gray-100">
@@ -197,6 +228,7 @@
                                 <th class="p-4 border-b">Email</th>
                                 <th class="p-4 border-b">Role</th>
                                 <th class="p-4 border-b">Since</th>
+                                <th class="p-4 border-b w-16"></th>
                             </tr>
                         </thead>
                         <tbody id="employees-table-body" class="divide-y divide-gray-100">
@@ -362,43 +394,46 @@
         function switchInnerTab(tabName, btnElement) {
             ['tasks', 'team', 'billing'].forEach(t => document.getElementById(`inner-${t}`).classList.add('hidden-view'));
             document.getElementById(`inner-${tabName}`).classList.remove('hidden-view');
-            
+
             document.querySelectorAll('#view-project-details .border-b button').forEach(b => b.classList.remove('tab-active', 'text-gray-800'));
             btnElement.classList.add('tab-active', 'text-gray-800');
+
+            if (tabName === 'team') loadProjectMembers();
         }
 
         // --- THE MAGIC SIMPLE REQUEST FUNCTION ---
         async function apiCall(endpoint, method = 'GET', body = null) {
             try {
-                // 1. Always append token to URL
                 const url = `${API_BASE}${endpoint}?token=${adminToken}`;
-                const options = { method: method };
-                
-                // 2. Format body as Form Data instead of JSON to avoid Preflight
+                const options = { method };
+
                 if (body && (method === 'POST' || method === 'PUT')) {
                     const formData = new URLSearchParams();
                     for (const key in body) {
-                        if(body[key] !== null && body[key] !== undefined) {
+                        if (body[key] !== null && body[key] !== undefined)
                             formData.append(key, body[key]);
-                        }
                     }
                     options.body = formData;
                 }
-                
-                // 3. Notice: NO HEADERS ATTACHED AT ALL
+
                 const res = await fetch(url, options);
-                
+
                 if (res.status === 401) {
                     alert("Session expired. Please log in again.");
                     logout();
                     return null;
                 }
-                
-                if (!res.ok) throw new Error(await res.text());
+
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    throw new Error(msg);
+                }
+
                 return await res.json();
             } catch (err) {
                 console.error("API Error:", err);
-                alert("An error occurred connecting to the backend.");
+                alert(err.message || "Could not connect to the backend.");
                 return null;
             }
         }
@@ -413,6 +448,12 @@
                     <td class="p-4">${c.contact_person || '—'}</td>
                     <td class="p-4 text-blue-600">${c.email}</td>
                     <td class="p-4 text-gray-500 text-sm">${c.billing_address || '—'}</td>
+                    <td class="p-4">
+                        <button onclick="deleteCustomer('${c.id}', '${c.business_name.replace(/'/g, "\\'")}')"
+                            class="text-gray-300 hover:text-red-500 transition" title="Delete customer">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
 
@@ -451,13 +492,19 @@
                 <div onclick="openProject('${p.id}')"
                      class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-blue-400 transition relative">
                     <div class="flex justify-between items-start mb-3">
-                        <h3 class="text-xl font-bold text-gray-800 pr-16">${p.name}</h3>
+                        <h3 class="text-xl font-bold text-gray-800 pr-8">${p.name}</h3>
                         <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusLabel}">${p.status}</span>
                     </div>
                     <p class="text-gray-500 text-sm mb-4 line-clamp-2">${p.description || 'No description'}</p>
-                    <div class="flex items-center gap-2 text-xs text-gray-400 border-t pt-3 mt-2">
-                        <i class="fas fa-building"></i>
-                        <span>${customer ? customer.business_name : '<span class="italic">No client linked</span>'}</span>
+                    <div class="flex items-center justify-between border-t pt-3 mt-2">
+                        <div class="flex items-center gap-2 text-xs text-gray-400">
+                            <i class="fas fa-building"></i>
+                            <span>${customer ? customer.business_name : '<span class="italic">No client linked</span>'}</span>
+                        </div>
+                        <button onclick="event.stopPropagation(); deleteProject('${p.id}', '${p.name.replace(/'/g, "\\'")}')"
+                            class="text-gray-300 hover:text-red-500 transition" title="Delete project">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
                     </div>
                 </div>`;
             }).join('');
@@ -507,32 +554,6 @@
                     </div>`;
             } else {
                 billingDiv.innerHTML = '<p class="text-gray-400 text-sm">No customer linked to this project.</p>';
-            }
-
-            // Team/NDAs tab
-            const teamDiv = document.getElementById('project-team-list');
-            if (globalEmployees.length) {
-                teamDiv.innerHTML = `
-                    <p class="text-sm text-gray-500 mb-4">All team members available for this project. Assign them via tasks.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        ${globalEmployees.map(e => `
-                            <div class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
-                                <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                                    ${e.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="font-medium text-sm text-gray-800 truncate">${e.name}</p>
-                                    <p class="text-xs text-gray-400 truncate">${e.email}</p>
-                                </div>
-                                <span class="ml-auto text-xs px-2 py-1 rounded-full flex-shrink-0 ${
-                                    e.role === 'Employee' ? 'bg-blue-100 text-blue-700' :
-                                    e.role === 'Contractor' ? 'bg-purple-100 text-purple-700' :
-                                    'bg-orange-100 text-orange-700'}">${e.role}</span>
-                            </div>
-                        `).join('')}
-                    </div>`;
-            } else {
-                teamDiv.innerHTML = '<p class="text-gray-400 text-sm">No team members yet. Add them in the <b>Team</b> section.</p>';
             }
 
             // Reset to tasks tab
@@ -614,15 +635,23 @@
                 const since = e.created_at ? new Date(e.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
                 return `
                 <tr class="hover:bg-gray-50">
-                    <td class="p-4 font-medium flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                            ${e.name.charAt(0).toUpperCase()}
+                    <td class="p-4 font-medium">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                ${e.name.charAt(0).toUpperCase()}
+                            </div>
+                            ${e.name}
                         </div>
-                        ${e.name}
                     </td>
                     <td class="p-4 text-blue-600">${e.email}</td>
                     <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${roleColor}">${e.role}</span></td>
                     <td class="p-4 text-gray-400 text-sm">${since}</td>
+                    <td class="p-4">
+                        <button onclick="deleteEmployee('${e.id}', '${e.name.replace(/'/g, "\\'")}')"
+                            class="text-gray-300 hover:text-red-500 transition" title="Delete member">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </td>
                 </tr>`;
             }).join('');
         }
@@ -639,6 +668,178 @@
                 document.getElementById('emp-email').value = '';
                 document.getElementById('emp-role').value = 'Employee';
                 loadEmployees();
+            }
+        }
+
+        async function deleteCustomer(id, name) {
+            if (!confirm(`Delete "${name}"?\n\nTheir linked projects will remain but will be unlinked. Invoice history will be permanently deleted.`)) return;
+            if (await apiCall(`/customers/${id}`, 'DELETE')) loadCustomers();
+        }
+
+        async function deleteProject(id, name) {
+            if (!confirm(`Delete project "${name}"?\n\nAll tasks, invoices, team assignments, and contracts for this project will be permanently deleted.`)) return;
+            if (await apiCall(`/projects/${id}`, 'DELETE')) {
+                switchView('projects');
+                loadProjects();
+            }
+        }
+
+        async function deleteEmployee(id, name) {
+            if (!confirm(`Delete "${name}" from the team?\n\nThey will be removed from all projects and their contracts will be deleted.`)) return;
+            if (await apiCall(`/employees/${id}`, 'DELETE')) loadEmployees();
+        }
+
+        // --- Project Members & Contracts ---
+        let contractEditorForEmployee = null;
+
+        function getSigningUrl(token) {
+            const base = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:8080'
+                : 'https://fly-ai-solutions.github.io';
+            return `${base}/sign.html?token=${token}`;
+        }
+
+        async function loadProjectMembers() {
+            const members = await apiCall(`/projects/${currentProjectId}/members`) || [];
+            const listDiv = document.getElementById('project-team-list');
+            closeContractEditor();
+
+            if (!members.length) {
+                listDiv.innerHTML = '<p class="text-gray-400 text-sm py-2">No team members assigned yet. Use the dropdown above to add someone.</p>';
+            } else {
+                listDiv.innerHTML = members.map(m => {
+                    const roleColor = m.role === 'Employee' ? 'bg-blue-100 text-blue-700' :
+                                      m.role === 'Contractor' ? 'bg-purple-100 text-purple-700' :
+                                      'bg-orange-100 text-orange-700';
+                    let badge, action;
+                    if (!m.contract_id) {
+                        badge = '<span class="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">No Contract</span>';
+                        action = `<button onclick="openContractEditor('${m.employee_id}','${m.name.replace(/'/g,"\\'")}')" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Create Contract</button>`;
+                    } else if (m.contract_status === 'Pending') {
+                        badge = '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full font-semibold"><i class="fas fa-clock mr-1"></i>Awaiting Signature</span>';
+                        action = `<button onclick="openContractEditor('${m.employee_id}','${m.name.replace(/'/g,"\\'")}')" class="text-sm text-gray-500 hover:text-gray-700">Edit & Resend</button>`;
+                    } else {
+                        const d = new Date(m.signed_at).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+                        badge = `<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold"><i class="fas fa-check mr-1"></i>Signed ${d}</span>`;
+                        action = `<a href="${getSigningUrl(m.signing_token)}" target="_blank" class="text-sm text-blue-600 hover:underline font-medium">View / Print</a>`;
+                    }
+                    return `
+                    <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                            ${m.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-gray-800">${m.name}</p>
+                            <p class="text-xs text-gray-400">${m.email}</p>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded-full flex-shrink-0 ${roleColor}">${m.role}</span>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            ${badge}
+                            ${action}
+                            <button onclick="removeProjectMember('${m.employee_id}')" title="Remove from project"
+                                class="text-gray-300 hover:text-red-500 transition ml-1">
+                                <i class="fas fa-user-minus text-sm"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Populate add-member dropdown — exclude already-added members
+            const addedIds = new Set(members.map(m => m.employee_id));
+            const available = globalEmployees.filter(e => !addedIds.has(e.id));
+            const sel = document.getElementById('add-member-select');
+            sel.innerHTML = '<option value="">Add team member...</option>' +
+                available.map(e => `<option value="${e.id}">${e.name} (${e.role})</option>`).join('');
+        }
+
+        async function addProjectMember() {
+            const empId = document.getElementById('add-member-select').value;
+            if (!empId) return alert('Select a team member first.');
+            await apiCall(`/projects/${currentProjectId}/members`, 'POST', { employee_id: empId });
+            loadProjectMembers();
+        }
+
+        async function removeProjectMember(employeeId) {
+            if (!confirm('Remove this person from the project?')) return;
+            await apiCall(`/projects/${currentProjectId}/members/${employeeId}`, 'DELETE');
+            loadProjectMembers();
+        }
+
+        function openContractEditor(employeeId, employeeName) {
+            contractEditorForEmployee = employeeId;
+            document.getElementById('contract-for-name').textContent = employeeName;
+            document.getElementById('contract-send-status').textContent = '';
+
+            const project = globalProjects.find(p => p.id === currentProjectId);
+            const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+            const hasCustomNda = project?.nda_text && project.nda_text !== 'Standard Mutual Non-Disclosure Agreement...';
+
+            document.getElementById('contract-text-area').value = hasCustomNda
+                ? project.nda_text
+                : `CONTRACTOR / EMPLOYEE AGREEMENT
+
+This Agreement is entered into as of ${today}, between FLY AI Solutions ("Company") and ${employeeName} ("Contractor").
+
+PROJECT: ${project?.name || ''}
+
+1. SCOPE OF WORK
+The Contractor agrees to perform services as defined by the Company for the above-referenced project.
+
+2. CONFIDENTIALITY
+The Contractor agrees to keep all project information, client data, source code, and business processes strictly confidential during and after the engagement.
+
+3. INTELLECTUAL PROPERTY
+All work produced under this agreement is considered work-for-hire and remains the sole property of FLY AI Solutions.
+
+4. COMPENSATION
+Compensation terms will be agreed separately between both parties.
+
+5. TERM
+This agreement is effective from the date signed until the project is completed or terminated by either party with reasonable notice.
+
+6. NON-COMPETE
+The Contractor agrees not to directly solicit or engage with the Company's clients for competing services during and for 6 months after this project.
+
+By signing below, both parties agree to the terms outlined in this Agreement.
+
+FLY AI Solutions
+Date: ${today}`;
+
+            document.getElementById('contract-editor').classList.remove('hidden');
+            document.getElementById('contract-editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function closeContractEditor() {
+            contractEditorForEmployee = null;
+            document.getElementById('contract-editor').classList.add('hidden');
+        }
+
+        async function sendContract() {
+            const text = document.getElementById('contract-text-area').value.trim();
+            if (!text) return alert('Contract text cannot be empty.');
+
+            const btn = document.getElementById('send-contract-btn');
+            const status = document.getElementById('contract-send-status');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+
+            const res = await apiCall('/contracts', 'POST', {
+                project_id: currentProjectId,
+                employee_id: contractEditorForEmployee,
+                contract_text: text
+            });
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send for Signature';
+
+            if (res) {
+                status.className = 'text-sm ml-1 text-green-600 font-medium';
+                status.textContent = '✓ Sent — awaiting signature.';
+                setTimeout(() => { closeContractEditor(); loadProjectMembers(); }, 1800);
+            } else {
+                status.className = 'text-sm ml-1 text-red-600';
+                status.textContent = 'Failed to send.';
             }
         }
 
