@@ -133,14 +133,13 @@
                     </div>
 
                     <div id="inner-team" class="hidden-view">
-                        <h3 class="text-lg font-semibold mb-4">Assigned Team & NDAs</h3>
-                        <p class="text-gray-500 text-sm">Select employees/contractors and generate standard NDA documents for this project.</p>
+                        <h3 class="text-lg font-semibold mb-4">Team & NDAs</h3>
+                        <div id="project-team-list"></div>
                     </div>
 
                     <div id="inner-billing" class="hidden-view">
                         <h3 class="text-lg font-semibold mb-4">Customer Billing Details</h3>
-                        <div id="project-customer-info" class="bg-gray-50 p-4 rounded border">
-                        </div>
+                        <div id="project-customer-info"></div>
                     </div>
                 </div>
             </section>
@@ -149,7 +148,7 @@
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Customers</h2>
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
                     <h3 class="text-lg font-semibold mb-4">Add New Customer</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <input type="text" id="cust-biz" placeholder="Business Name" class="border p-2 rounded">
                         <input type="text" id="cust-person" placeholder="Contact Person" class="border p-2 rounded">
                         <input type="email" id="cust-email" placeholder="Email" class="border p-2 rounded">
@@ -157,14 +156,15 @@
                     </div>
                     <button onclick="addCustomer()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save Customer</button>
                 </div>
-                
+
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-gray-50 text-gray-600">
+                        <thead class="bg-gray-50 text-gray-600 text-sm">
                             <tr>
                                 <th class="p-4 border-b">Business</th>
                                 <th class="p-4 border-b">Contact</th>
                                 <th class="p-4 border-b">Email</th>
+                                <th class="p-4 border-b">Billing Address</th>
                             </tr>
                         </thead>
                         <tbody id="customers-table-body" class="divide-y divide-gray-100">
@@ -188,34 +188,72 @@
                     </div>
                     <button onclick="addEmployee()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Member</button>
                 </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-600 text-sm">
+                            <tr>
+                                <th class="p-4 border-b">Name</th>
+                                <th class="p-4 border-b">Email</th>
+                                <th class="p-4 border-b">Role</th>
+                                <th class="p-4 border-b">Since</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employees-table-body" class="divide-y divide-gray-100">
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="view-invoices" class="view-section hidden-view">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6">Generate Invoice</h2>
-                <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200 max-w-2xl">
-                    <form id="invoiceForm" class="space-y-6">
-                        <div class="grid grid-cols-2 gap-6">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">Invoicing</h2>
+
+                <!-- Sub-tabs -->
+                <div class="flex space-x-6 border-b border-gray-200 mb-6">
+                    <button class="pb-2 tab-active text-sm font-medium" id="inv-tab-create" onclick="switchInvTab('create', this)">Create Invoice</button>
+                    <button class="pb-2 text-gray-500 hover:text-gray-800 text-sm font-medium" id="inv-tab-list" onclick="switchInvTab('list', this)">List Invoices</button>
+                </div>
+
+                <!-- Create Invoice Panel -->
+                <div id="inv-create-panel">
+                    <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200 max-w-2xl">
+                        <form id="invoiceForm" class="space-y-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Select Project</label>
                                 <select id="inv-project" required class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none bg-white">
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Amount (USD)</label>
-                                <input type="number" id="inv-amount" step="0.01" required placeholder="0.00" class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-sm font-medium text-gray-700">Invoice Items</label>
+                                    <button type="button" onclick="addLineItem()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                        <i class="fas fa-plus mr-1"></i>Add Item
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-[1fr_140px_32px] gap-2 mb-1 px-1">
+                                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wide">Description</span>
+                                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wide">Amount (USD)</span>
+                                    <span></span>
+                                </div>
+                                <div id="line-items-container" class="space-y-2"></div>
+                                <div class="mt-3 pt-3 border-t border-gray-100 flex justify-end items-center gap-2">
+                                    <span class="text-sm text-gray-500">Total:</span>
+                                    <span id="inv-total" class="text-base font-bold text-gray-800">$0.00</span>
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Description / Line Item</label>
-                            <input type="text" id="inv-desc" required placeholder="e.g., Milestone 1 Completion" class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none">
-                        </div>
-                        <div class="pt-2">
-                            <button type="submit" id="submitInvBtn" class="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition flex justify-center items-center">
-                                <i class="fas fa-paper-plane mr-2"></i> Generate & Email Stripe Link
-                            </button>
-                        </div>
-                    </form>
-                    <div id="inv-status" class="mt-4 p-4 rounded hidden"></div>
+                            <div class="pt-2">
+                                <button type="submit" id="submitInvBtn" class="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition flex justify-center items-center">
+                                    <i class="fas fa-paper-plane mr-2"></i> Generate & Email Stripe Link
+                                </button>
+                            </div>
+                        </form>
+                        <div id="inv-status" class="mt-4 p-4 rounded hidden"></div>
+                    </div>
+                </div>
+
+                <!-- List Invoices Panel -->
+                <div id="inv-list-panel" class="hidden-view">
+                    <div id="invoices-list-container" class="space-y-6"></div>
                 </div>
             </section>
 
@@ -224,7 +262,9 @@
 
     <script>
         // CONFIGURATION
-        const API_BASE = "https://jerin-api.flyai.online/x004/api";
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://127.0.0.1:8000/x004/api'
+            : 'https://jerin-api.flyai.online/x004/api';
         
         // --- AUTHENTICATION LOGIC ---
         let adminToken = sessionStorage.getItem('flyai_admin_token') || null;
@@ -268,7 +308,7 @@
         function showDashboard() {
             document.getElementById('login-overlay').classList.add('hidden-view');
             document.getElementById('dashboard-wrapper').classList.remove('hidden-view');
-            loadCustomers().then(() => loadProjects());
+            loadCustomers().then(() => Promise.all([loadProjects(), loadEmployees()]));
         }
 
         function logout() {
@@ -300,11 +340,12 @@
         let currentProjectId = null;
         let globalCustomers = [];
         let globalProjects = [];
+        let globalEmployees = [];
 
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-view'));
             document.getElementById(`view-${viewId}`).classList.remove('hidden-view');
-            
+
             document.querySelectorAll('aside nav button').forEach(btn => {
                 btn.classList.remove('bg-blue-600', 'text-white');
                 btn.classList.add('text-slate-300');
@@ -312,10 +353,10 @@
             document.getElementById(`nav-${viewId}`).classList.add('bg-blue-600', 'text-white');
             document.getElementById(`nav-${viewId}`).classList.remove('text-slate-300');
 
-            if(viewId === 'projects') loadProjects();
-            if(viewId === 'customers') loadCustomers();
-            if(viewId === 'invoices') populateInvoiceDropdowns();
-            // Note: Add logic here later if you create a loadEmployees() function
+            if (viewId === 'projects') loadProjects();
+            if (viewId === 'customers') loadCustomers();
+            if (viewId === 'employees') loadEmployees();
+            if (viewId === 'invoices') populateInvoiceDropdowns();
         }
 
         function switchInnerTab(tabName, btnElement) {
@@ -364,18 +405,19 @@
 
         // 1. Customers
         async function loadCustomers() {
-            globalCustomers = await apiCall('/customers') || []; 
+            globalCustomers = await apiCall('/customers') || [];
             const tbody = document.getElementById('customers-table-body');
             tbody.innerHTML = globalCustomers.map(c => `
                 <tr class="hover:bg-gray-50">
                     <td class="p-4 font-medium">${c.business_name}</td>
-                    <td class="p-4">${c.contact_person}</td>
+                    <td class="p-4">${c.contact_person || '—'}</td>
                     <td class="p-4 text-blue-600">${c.email}</td>
+                    <td class="p-4 text-gray-500 text-sm">${c.billing_address || '—'}</td>
                 </tr>
             `).join('');
-            
+
             const select = document.getElementById('proj-customer');
-            select.innerHTML = '<option value="">Select Customer...</option>' + 
+            select.innerHTML = '<option value="">Select Customer...</option>' +
                 globalCustomers.map(c => `<option value="${c.id}">${c.business_name}</option>`).join('');
         }
 
@@ -386,7 +428,8 @@
                 email: document.getElementById('cust-email').value,
                 billing_address: document.getElementById('cust-address').value
             };
-            if(await apiCall('/customers', 'POST', data)) {
+            if (!data.business_name || !data.email) return alert("Business name and email are required.");
+            if (await apiCall('/customers', 'POST', data)) {
                 document.querySelectorAll('#view-customers input').forEach(i => i.value = '');
                 loadCustomers();
             }
@@ -396,14 +439,28 @@
         async function loadProjects() {
             globalProjects = await apiCall('/projects') || [];
             const container = document.getElementById('projects-container');
-            container.innerHTML = globalProjects.map(p => `
-                <div onclick="openProject('${p.id}', '${p.name.replace(/'/g, "\\'")}', '${(p.description || '').replace(/'/g, "\\'")}')" 
+            if (!globalProjects.length) {
+                container.innerHTML = '<p class="text-gray-400 col-span-3 py-8 text-center">No projects yet. Click <b>New Project</b> to get started.</p>';
+                return;
+            }
+            container.innerHTML = globalProjects.map(p => {
+                const customer = globalCustomers.find(c => c.id === p.customer_id);
+                const statusColor = p.status === 'Active' ? 'bg-green-500' : p.status === 'On-Hold' ? 'bg-yellow-400' : 'bg-gray-400';
+                const statusLabel = p.status === 'Active' ? 'text-green-700 bg-green-50' : p.status === 'On-Hold' ? 'text-yellow-700 bg-yellow-50' : 'text-gray-600 bg-gray-100';
+                return `
+                <div onclick="openProject('${p.id}')"
                      class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-blue-400 transition relative">
-                    <h3 class="text-xl font-bold mb-2 text-gray-800">${p.name}</h3>
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="text-xl font-bold text-gray-800 pr-16">${p.name}</h3>
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusLabel}">${p.status}</span>
+                    </div>
                     <p class="text-gray-500 text-sm mb-4 line-clamp-2">${p.description || 'No description'}</p>
-                    <div class="absolute top-6 right-6 w-3 h-3 rounded-full ${p.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}"></div>
-                </div>
-            `).join('');
+                    <div class="flex items-center gap-2 text-xs text-gray-400 border-t pt-3 mt-2">
+                        <i class="fas fa-building"></i>
+                        <span>${customer ? customer.business_name : '<span class="italic">No client linked</span>'}</span>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         async function createProject() {
@@ -412,9 +469,8 @@
                 description: document.getElementById('proj-desc').value,
                 customer_id: document.getElementById('proj-customer').value
             };
-            if(!data.name || !data.customer_id) return alert("Name and Customer are required");
-            
-            if(await apiCall('/projects', 'POST', data)) {
+            if (!data.name || !data.customer_id) return alert("Name and Customer are required.");
+            if (await apiCall('/projects', 'POST', data)) {
                 document.getElementById('new-project-form').classList.add('hidden');
                 document.getElementById('proj-name').value = '';
                 document.getElementById('proj-desc').value = '';
@@ -422,15 +478,69 @@
             }
         }
 
-        // 3. Tasks inside Project Details
-        async function openProject(id, name, desc) {
+        // 3. Project Details
+        function openProject(id) {
+            const project = globalProjects.find(p => p.id === id);
+            if (!project) return;
             currentProjectId = id;
-            document.getElementById('detail-proj-name').innerText = name;
-            document.getElementById('detail-proj-desc').innerText = desc;
-            
+
+            document.getElementById('detail-proj-name').innerText = project.name;
+            document.getElementById('detail-proj-desc').innerText = project.description || '';
+
+            const statusEl = document.getElementById('detail-proj-status');
+            statusEl.textContent = project.status;
+            statusEl.className = `px-3 py-1 rounded-full text-sm font-semibold ${
+                project.status === 'Active' ? 'bg-green-100 text-green-800' :
+                project.status === 'On-Hold' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-gray-100 text-gray-700'}`;
+
+            // Billing Info tab
+            const customer = globalCustomers.find(c => c.id === project.customer_id);
+            const billingDiv = document.getElementById('project-customer-info');
+            if (customer) {
+                billingDiv.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Business</p><p class="font-semibold">${customer.business_name}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Contact Person</p><p>${customer.contact_person || '—'}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Email</p><p class="text-blue-600">${customer.email}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Billing Address</p><p>${customer.billing_address || '—'}</p></div>
+                    </div>`;
+            } else {
+                billingDiv.innerHTML = '<p class="text-gray-400 text-sm">No customer linked to this project.</p>';
+            }
+
+            // Team/NDAs tab
+            const teamDiv = document.getElementById('project-team-list');
+            if (globalEmployees.length) {
+                teamDiv.innerHTML = `
+                    <p class="text-sm text-gray-500 mb-4">All team members available for this project. Assign them via tasks.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        ${globalEmployees.map(e => `
+                            <div class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
+                                <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                    ${e.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-medium text-sm text-gray-800 truncate">${e.name}</p>
+                                    <p class="text-xs text-gray-400 truncate">${e.email}</p>
+                                </div>
+                                <span class="ml-auto text-xs px-2 py-1 rounded-full flex-shrink-0 ${
+                                    e.role === 'Employee' ? 'bg-blue-100 text-blue-700' :
+                                    e.role === 'Contractor' ? 'bg-purple-100 text-purple-700' :
+                                    'bg-orange-100 text-orange-700'}">${e.role}</span>
+                            </div>
+                        `).join('')}
+                    </div>`;
+            } else {
+                teamDiv.innerHTML = '<p class="text-gray-400 text-sm">No team members yet. Add them in the <b>Team</b> section.</p>';
+            }
+
+            // Reset to tasks tab
+            switchInnerTab('tasks', document.querySelector('#view-project-details .border-b button:first-child'));
+
             document.getElementById('view-projects').classList.add('hidden-view');
             document.getElementById('view-project-details').classList.remove('hidden-view');
-            
+
             loadTasks();
         }
 
@@ -490,42 +600,180 @@
             link.click();
         }
 
-        // Missing Employee logic added!
+        async function loadEmployees() {
+            globalEmployees = await apiCall('/employees') || [];
+            const tbody = document.getElementById('employees-table-body');
+            if (!globalEmployees.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-400">No team members yet.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = globalEmployees.map(e => {
+                const roleColor = e.role === 'Employee' ? 'bg-blue-100 text-blue-700' :
+                                  e.role === 'Contractor' ? 'bg-purple-100 text-purple-700' :
+                                  'bg-orange-100 text-orange-700';
+                const since = e.created_at ? new Date(e.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-4 font-medium flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                            ${e.name.charAt(0).toUpperCase()}
+                        </div>
+                        ${e.name}
+                    </td>
+                    <td class="p-4 text-blue-600">${e.email}</td>
+                    <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${roleColor}">${e.role}</span></td>
+                    <td class="p-4 text-gray-400 text-sm">${since}</td>
+                </tr>`;
+            }).join('');
+        }
+
         async function addEmployee() {
             const data = {
                 name: document.getElementById('emp-name').value,
                 email: document.getElementById('emp-email').value,
                 role: document.getElementById('emp-role').value
             };
-            
-            if(!data.name || !data.email) return alert("Name and Email are required");
-
-            if(await apiCall('/employees', 'POST', data)) {
+            if (!data.name || !data.email) return alert("Name and Email are required.");
+            if (await apiCall('/employees', 'POST', data)) {
                 document.getElementById('emp-name').value = '';
                 document.getElementById('emp-email').value = '';
                 document.getElementById('emp-role').value = 'Employee';
-                alert("Team member added successfully!");
+                loadEmployees();
             }
         }
 
         // 4. Invoicing
+        let lineItems = [];
+
+        function switchInvTab(tab, el) {
+            document.getElementById('inv-create-panel').classList.toggle('hidden-view', tab !== 'create');
+            document.getElementById('inv-list-panel').classList.toggle('hidden-view', tab !== 'list');
+            document.querySelectorAll('[id^="inv-tab-"]').forEach(b => {
+                b.classList.remove('tab-active', 'text-gray-800');
+                b.classList.add('text-gray-500');
+            });
+            el.classList.add('tab-active');
+            el.classList.remove('text-gray-500');
+            if (tab === 'list') loadInvoicesList();
+        }
+
+        function addLineItem() {
+            lineItems.push({ desc: '', amount: '' });
+            renderLineItems();
+        }
+
+        function removeLineItem(idx) {
+            lineItems.splice(idx, 1);
+            renderLineItems();
+            recalcTotal();
+        }
+
+        function renderLineItems() {
+            const container = document.getElementById('line-items-container');
+            container.innerHTML = lineItems.map((item, idx) => `
+                <div class="grid grid-cols-[1fr_140px_32px] gap-2 items-center">
+                    <input type="text" value="${item.desc.replace(/"/g, '&quot;')}" placeholder="e.g., Milestone 1 Completion"
+                        class="border border-gray-300 rounded p-2 text-sm focus:ring-blue-500 outline-none"
+                        oninput="lineItems[${idx}].desc = this.value">
+                    <input type="number" value="${item.amount}" step="0.01" min="0" placeholder="0.00"
+                        class="border border-gray-300 rounded p-2 text-sm focus:ring-blue-500 outline-none"
+                        oninput="lineItems[${idx}].amount = this.value; recalcTotal()">
+                    <button type="button" onclick="removeLineItem(${idx})"
+                        class="text-gray-400 hover:text-red-500 transition flex items-center justify-center h-full">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function recalcTotal() {
+            const total = lineItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            document.getElementById('inv-total').textContent = `$${total.toFixed(2)}`;
+        }
+
         function populateInvoiceDropdowns() {
             const projSelect = document.getElementById('inv-project');
-            projSelect.innerHTML = '<option value="">Select Project...</option>' + 
+            projSelect.innerHTML = '<option value="">Select Project...</option>' +
                 globalProjects.map(p => `<option value="${p.id}" data-cust="${p.customer_id}">${p.name}</option>`).join('');
+            if (lineItems.length === 0) {
+                lineItems = [{ desc: '', amount: '' }];
+                renderLineItems();
+            }
+        }
+
+        async function loadInvoicesList() {
+            const container = document.getElementById('invoices-list-container');
+            container.innerHTML = '<p class="text-gray-400 text-sm">Loading...</p>';
+            const invoices = await apiCall('/invoices', 'GET');
+            if (!invoices || !invoices.length) {
+                container.innerHTML = '<p class="text-gray-400 text-sm py-4">No invoices found.</p>';
+                return;
+            }
+            const grouped = {};
+            invoices.forEach(inv => {
+                const key = inv.project_id;
+                if (!grouped[key]) grouped[key] = { name: inv.project_name || 'Unknown Project', items: [] };
+                grouped[key].items.push(inv);
+            });
+            container.innerHTML = Object.values(grouped).map(group => `
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                        <h3 class="font-semibold text-gray-800"><i class="fas fa-project-diagram mr-2 text-blue-500"></i>${group.name}</h3>
+                    </div>
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-gray-500 text-xs uppercase bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 border-b">Description</th>
+                                <th class="px-6 py-3 border-b">Amount</th>
+                                <th class="px-6 py-3 border-b">Date</th>
+                                <th class="px-6 py-3 border-b">Status</th>
+                                <th class="px-6 py-3 border-b">Link</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            ${group.items.map(inv => {
+                                const isPaid = inv.status === 'Paid';
+                                const badge = isPaid
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-yellow-100 text-yellow-700';
+                                const date = new Date(inv.issue_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                                return `<tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-3 max-w-xs truncate" title="${inv.description || ''}">${inv.description || '—'}</td>
+                                    <td class="px-6 py-3 font-semibold">$${parseFloat(inv.amount_usd).toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-gray-500">${date}</td>
+                                    <td class="px-6 py-3">
+                                        <span class="px-2 py-1 rounded-full text-xs font-bold ${badge}">${isPaid ? 'PAID' : 'UNPAID'}</span>
+                                    </td>
+                                    <td class="px-6 py-3">
+                                        ${inv.stripe_payment_link
+                                            ? `<a href="${inv.stripe_payment_link}" target="_blank" class="text-blue-600 hover:underline text-xs">View Link</a>`
+                                            : '<span class="text-gray-400 text-xs">—</span>'}
+                                    </td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `).join('');
         }
 
         document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitInvBtn');
             const statusDiv = document.getElementById('inv-status');
-            
+
             const projSelect = document.getElementById('inv-project');
             const projectId = projSelect.value;
             const custId = projSelect.options[projSelect.selectedIndex].getAttribute('data-cust');
             const customer = globalCustomers.find(c => c.id === custId);
 
-            if(!customer) return alert("Selected project has no associated customer data.");
+            if (!customer) return alert("Selected project has no associated customer data.");
+
+            const validItems = lineItems.filter(i => i.desc.trim() && parseFloat(i.amount) > 0);
+            if (!validItems.length) return alert("Please add at least one item with a description and amount.");
+
+            const totalAmount = validItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+            const combinedDesc = validItems.map(i => `${i.desc} ($${parseFloat(i.amount).toFixed(2)})`).join(' | ');
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
@@ -536,19 +784,22 @@
                 customer_id: custId,
                 client_name: customer.contact_person || customer.business_name,
                 client_email: customer.email,
-                description: document.getElementById('inv-desc').value,
-                amount_usd: parseFloat(document.getElementById('inv-amount').value)
+                description: combinedDesc,
+                amount_usd: totalAmount
             };
 
             const res = await apiCall('/generate-invoice', 'POST', payload);
-            
+
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Generate & Email Stripe Link';
-            
-            if(res && res.link) {
+
+            if (res && res.link) {
                 statusDiv.className = "mt-4 p-4 rounded bg-green-50 text-green-800 border border-green-200 block";
-                statusDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> <b>Success!</b> Invoice emailed. <br><a href="${res.link}" target="_blank" class="text-blue-600 underline mt-2 inline-block">View Stripe Payment Link</a>`;
-                e.target.reset();
+                statusDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> <b>Success!</b> Invoice created. <br><a href="${res.link}" target="_blank" class="text-blue-600 underline mt-2 inline-block">View Payment Link</a>`;
+                lineItems = [{ desc: '', amount: '' }];
+                renderLineItems();
+                recalcTotal();
+                projSelect.selectedIndex = 0;
             } else {
                 statusDiv.className = "mt-4 p-4 rounded bg-red-50 text-red-800 border border-red-200 block";
                 statusDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i> Error generating invoice.`;
