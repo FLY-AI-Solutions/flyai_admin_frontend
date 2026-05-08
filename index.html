@@ -55,6 +55,15 @@
                 <button onclick="switchView('invoices')" id="nav-invoices" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
                     <i class="fas fa-file-invoice-dollar w-5"></i> Invoicing
                 </button>
+                <button onclick="switchView('documents')" id="nav-documents" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
+                    <i class="fas fa-file-contract w-5"></i> Contract Documents
+                </button>
+                <button onclick="switchView('status')" id="nav-status" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
+                    <i class="fas fa-tasks w-5"></i> Status
+                </button>
+                <button onclick="switchView('finance')" id="nav-finance" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
+                    <i class="fas fa-dollar-sign w-5"></i> Finance
+                </button>
             </nav>
             <div class="p-4 border-t border-slate-700 text-sm flex justify-between items-center">
                 <span class="text-slate-400">Welcome back</span>
@@ -103,7 +112,7 @@
                         <span id="detail-proj-status" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Active</span>
                     </div>
 
-                    <div class="flex space-x-6 border-b border-gray-200 mb-6">
+                    <div class="flex space-x-6 border-b border-gray-200 mb-6 flex-wrap">
                         <button class="pb-2 tab-active" onclick="switchInnerTab('tasks', this)">Tasks</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('team', this)">Team / NDAs</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('billing', this)">Billing Info</button>
@@ -170,6 +179,191 @@
                     <div id="inner-billing" class="hidden-view">
                         <h3 class="text-lg font-semibold mb-4">Customer Billing Details</h3>
                         <div id="project-customer-info"></div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- ===== CONTRACT DOCUMENTS ===== -->
+            <section id="view-documents" class="view-section hidden-view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Contract Documents</h2>
+
+                <!-- Project selector -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-4">
+                    <label class="text-sm font-medium text-gray-600 whitespace-nowrap">Select Project:</label>
+                    <select id="docs-project-select" class="border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 flex-1 max-w-xs">
+                        <option value="">— choose a project —</option>
+                    </select>
+                </div>
+
+                <!-- Upload form -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Upload Document</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        <input type="text" id="doc-name" placeholder="Document name" class="border p-2 rounded text-sm">
+                        <input type="text" id="doc-description" placeholder="Description (optional)" class="border p-2 rounded text-sm md:col-span-2">
+                    </div>
+                    <div class="flex gap-3 items-center flex-wrap">
+                        <input type="file" id="doc-file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="text-sm">
+                        <button type="button" onclick="addProjectDocument()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
+                            <i class="fas fa-upload mr-1"></i>Upload
+                        </button>
+                        <span id="doc-upload-status" class="text-sm text-gray-500"></span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">Allowed: PDF, DOC, DOCX, PNG, JPG/JPEG. Max 25 MB.</p>
+                </div>
+
+                <!-- Documents table -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 text-sm">
+                                    <th class="p-3 border-b">Project</th>
+                                    <th class="p-3 border-b">Name</th>
+                                    <th class="p-3 border-b">Description</th>
+                                    <th class="p-3 border-b">File</th>
+                                    <th class="p-3 border-b w-32">Uploaded</th>
+                                    <th class="p-3 border-b w-32 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documents-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== STATUS ===== -->
+            <section id="view-status" class="view-section hidden-view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Project Status</h2>
+
+                <!-- Project selector -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-4">
+                    <label class="text-sm font-medium text-gray-600 whitespace-nowrap">Select Project:</label>
+                    <select id="status-project-select" class="border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 flex-1 max-w-xs">
+                        <option value="">— choose a project —</option>
+                    </select>
+                </div>
+
+                <!-- Add status form -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Add Status Entry</h3>
+                    <div class="flex gap-3 items-start flex-wrap">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Date</label>
+                            <input type="date" id="status-date" class="border p-2 rounded text-sm">
+                        </div>
+                        <div class="flex-1 min-w-[260px]">
+                            <label class="block text-xs text-gray-500 mb-1">Description</label>
+                            <textarea id="status-description" placeholder="Status description..." rows="2" class="border p-2 rounded text-sm w-full"></textarea>
+                        </div>
+                        <div class="pt-5">
+                            <button type="button" onclick="addProjectStatus()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
+                                <i class="fas fa-plus mr-1"></i>Add Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status table -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 text-sm">
+                                    <th class="p-3 border-b">Project</th>
+                                    <th class="p-3 border-b w-40">Date</th>
+                                    <th class="p-3 border-b">Description</th>
+                                    <th class="p-3 border-b w-20 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statuses-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== FINANCE ===== -->
+            <section id="view-finance" class="view-section hidden-view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Finance</h2>
+
+                <!-- Project selector -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-4">
+                    <label class="text-sm font-medium text-gray-600 whitespace-nowrap">Select Project:</label>
+                    <select id="finance-project-select" class="border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 flex-1 max-w-xs">
+                        <option value="">— choose a project —</option>
+                    </select>
+                </div>
+
+                <!-- Add transaction form -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Add Transaction</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Transaction Date</label>
+                            <input type="date" id="fin-date" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Paid By / Paid To</label>
+                            <input type="text" id="fin-party" placeholder="Name or company" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Direction</label>
+                            <select id="fin-direction" class="border p-2 rounded text-sm w-full bg-white">
+                                <option value="Debit">Debit</option>
+                                <option value="Credit">Credit</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Amount (USD)</label>
+                            <input type="number" step="0.01" id="fin-amount" placeholder="0.00" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-xs text-gray-500 mb-1">Services Description</label>
+                            <textarea id="fin-services" rows="2" placeholder="What was paid for..." class="border p-2 rounded text-sm w-full"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Service Start Date</label>
+                            <input type="date" id="fin-start" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Service End Date</label>
+                            <input type="date" id="fin-end" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-500 mb-1">Attachment (optional)</label>
+                            <input type="file" id="fin-file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="text-sm">
+                        </div>
+                    </div>
+                    <div class="flex gap-3 items-center">
+                        <button type="button" onclick="addFinanceRow()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
+                            <i class="fas fa-plus mr-1"></i>Add Transaction
+                        </button>
+                        <span id="fin-add-status" class="text-sm text-gray-500"></span>
+                    </div>
+                </div>
+
+                <!-- Finance table -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600">
+                                    <th class="p-2 border-b">Project</th>
+                                    <th class="p-2 border-b">Date</th>
+                                    <th class="p-2 border-b">Paid By/To</th>
+                                    <th class="p-2 border-b">Dr/Cr</th>
+                                    <th class="p-2 border-b text-right">Amount</th>
+                                    <th class="p-2 border-b">Services</th>
+                                    <th class="p-2 border-b">Service Range</th>
+                                    <th class="p-2 border-b text-center">File</th>
+                                    <th class="p-2 border-b text-center">Signature</th>
+                                    <th class="p-2 border-b">Sig Email</th>
+                                    <th class="p-2 border-b text-center w-24">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="finance-table-body"></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -385,10 +579,13 @@
             document.getElementById(`nav-${viewId}`).classList.add('bg-blue-600', 'text-white');
             document.getElementById(`nav-${viewId}`).classList.remove('text-slate-300');
 
-            if (viewId === 'projects') loadProjects();
-            if (viewId === 'customers') loadCustomers();
-            if (viewId === 'employees') loadEmployees();
-            if (viewId === 'invoices') populateInvoiceDropdowns();
+            if (viewId === 'projects')   loadProjects();
+            if (viewId === 'customers')  loadCustomers();
+            if (viewId === 'employees')  loadEmployees();
+            if (viewId === 'invoices')   populateInvoiceDropdowns();
+            if (viewId === 'documents')  initDocumentsView();
+            if (viewId === 'status')     initStatusView();
+            if (viewId === 'finance')    initFinanceView();
         }
 
         function switchInnerTab(tabName, btnElement) {
@@ -1006,6 +1203,297 @@ Date: ${today}`;
                 statusDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i> Error generating invoice.`;
             }
         });
+
+        // --- Multipart helper (for file uploads) ---
+        async function apiCallMultipart(endpoint, method = 'POST', formData = null) {
+            try {
+                const url = `${API_BASE}${endpoint}?token=${adminToken}`;
+                const options = { method };
+                if (formData) options.body = formData;
+                const res = await fetch(url, options);
+                if (res.status === 401) {
+                    alert("Session expired. Please log in again.");
+                    logout();
+                    return null;
+                }
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    throw new Error(msg);
+                }
+                return await res.json();
+            } catch (err) {
+                console.error("API Error:", err);
+                alert(err.message || "Could not connect to the backend.");
+                return null;
+            }
+        }
+
+        function escapeHtml(s) {
+            return (s == null ? '' : String(s))
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function fmtDate(s) { return s ? String(s).slice(0, 10) : '—'; }
+        function fmtBytes(n) {
+            if (!n && n !== 0) return '—';
+            if (n < 1024) return n + ' B';
+            if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+            return (n/(1024*1024)).toFixed(1) + ' MB';
+        }
+
+        // --- Helpers to populate project dropdowns ---
+        function populateProjectDropdown(selectId) {
+            const sel = document.getElementById(selectId);
+            const current = sel.value;
+            sel.innerHTML = '<option value="">— choose a project —</option>' +
+                globalProjects.map(p => `<option value="${p.id}"${p.id === current ? ' selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
+        }
+
+        // --- Contract Documents (top-level view) ---
+        async function initDocumentsView() {
+            if (!globalProjects.length) globalProjects = await apiCall('/projects') || [];
+            populateProjectDropdown('docs-project-select');
+            loadProjectDocuments();
+        }
+
+        async function loadProjectDocuments() {
+            const tbody = document.getElementById('documents-table-body');
+            const docs = await apiCall('/documents') || [];
+            if (!docs.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 text-sm">No documents uploaded yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = docs.map(d => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3 border-b text-sm text-gray-500">${escapeHtml(d.project_name || '—')}</td>
+                    <td class="p-3 border-b font-medium">${escapeHtml(d.name)}</td>
+                    <td class="p-3 border-b text-gray-600 text-sm">${escapeHtml(d.description || '—')}</td>
+                    <td class="p-3 border-b text-sm text-gray-500">
+                        ${escapeHtml(d.original_filename)}
+                        <span class="text-xs text-gray-400 block">${fmtBytes(d.file_size_bytes)}</span>
+                    </td>
+                    <td class="p-3 border-b text-sm text-gray-500">${fmtDate(d.uploaded_at)}</td>
+                    <td class="p-3 border-b text-center whitespace-nowrap">
+                        <a href="${API_BASE}/documents/${d.id}/download?token=${encodeURIComponent(adminToken)}"
+                           target="_blank" class="text-gray-500 hover:text-blue-600 mx-1" title="Download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        <button type="button" onclick="emailDocument('${d.id}', '${escapeHtml(d.name).replace(/'/g, "\\'")}')"
+                            class="text-gray-500 hover:text-blue-600 mx-1" title="Email document">
+                            <i class="fas fa-envelope"></i>
+                        </button>
+                        <button type="button" onclick="deleteDocument('${d.id}')"
+                            class="text-gray-300 hover:text-red-500 mx-1" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function addProjectDocument() {
+            const projectId = document.getElementById('docs-project-select').value;
+            if (!projectId) { alert('Please select a project first.'); return; }
+            const name = document.getElementById('doc-name').value.trim();
+            const description = document.getElementById('doc-description').value.trim();
+            const fileInput = document.getElementById('doc-file');
+            const statusEl = document.getElementById('doc-upload-status');
+            if (!name) { alert('Document name is required.'); return; }
+            if (!fileInput.files.length) { alert('Please choose a file.'); return; }
+            const fd = new FormData();
+            fd.append('name', name);
+            fd.append('description', description);
+            fd.append('file', fileInput.files[0]);
+            statusEl.textContent = 'Uploading...';
+            const res = await apiCallMultipart(`/projects/${projectId}/documents`, 'POST', fd);
+            if (res) {
+                statusEl.textContent = 'Uploaded.';
+                document.getElementById('doc-name').value = '';
+                document.getElementById('doc-description').value = '';
+                fileInput.value = '';
+                loadProjectDocuments();
+                setTimeout(() => statusEl.textContent = '', 2000);
+            } else {
+                statusEl.textContent = '';
+            }
+        }
+
+        async function emailDocument(docId, docName) {
+            const recipient = prompt(`Send "${docName}" to which email address?`);
+            if (!recipient) return;
+            const res = await apiCall(`/documents/${docId}/email`, 'POST', { recipient_email: recipient });
+            if (res) alert(res.message || 'Email sent.');
+        }
+
+        async function deleteDocument(docId) {
+            if (!confirm('Delete this document?')) return;
+            if (await apiCall(`/documents/${docId}`, 'DELETE')) loadProjectDocuments();
+        }
+
+        // --- Status (top-level view) ---
+        async function initStatusView() {
+            if (!globalProjects.length) globalProjects = await apiCall('/projects') || [];
+            populateProjectDropdown('status-project-select');
+            const dateInput = document.getElementById('status-date');
+            if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+            loadProjectStatuses();
+        }
+
+        async function loadProjectStatuses() {
+            const tbody = document.getElementById('statuses-table-body');
+            const items = await apiCall('/statuses') || [];
+            if (!items.length) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 text-sm">No status entries yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = items.map(s => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3 border-b text-sm text-gray-500">${escapeHtml(s.project_name || '—')}</td>
+                    <td class="p-3 border-b font-medium text-gray-700">${fmtDate(s.status_date)}</td>
+                    <td class="p-3 border-b text-gray-600 whitespace-pre-wrap">${escapeHtml(s.description)}</td>
+                    <td class="p-3 border-b text-center">
+                        <button type="button" onclick="deleteStatus('${s.id}')" class="text-gray-300 hover:text-red-500" title="Delete">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function addProjectStatus() {
+            const projectId = document.getElementById('status-project-select').value;
+            if (!projectId) { alert('Please select a project first.'); return; }
+            const status_date = document.getElementById('status-date').value;
+            const description = document.getElementById('status-description').value.trim();
+            if (!status_date) { alert('Status date is required.'); return; }
+            if (!description) { alert('Description is required.'); return; }
+            const res = await apiCall(`/projects/${projectId}/statuses`, 'POST', { status_date, description });
+            if (res) {
+                document.getElementById('status-description').value = '';
+                loadProjectStatuses();
+            }
+        }
+
+        async function deleteStatus(id) {
+            if (!confirm('Delete this status entry?')) return;
+            if (await apiCall(`/statuses/${id}`, 'DELETE')) loadProjectStatuses();
+        }
+
+        // --- Finance (top-level view) ---
+        function sigBadge(status) {
+            if (status === 'Signed')  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs"><i class="fas fa-check"></i> Signed</span>`;
+            if (status === 'Pending') return `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs"><i class="fas fa-hourglass-half"></i> Pending</span>`;
+            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">Not Signed</span>`;
+        }
+
+        async function initFinanceView() {
+            if (!globalProjects.length) globalProjects = await apiCall('/projects') || [];
+            populateProjectDropdown('finance-project-select');
+            const dateInput = document.getElementById('fin-date');
+            if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+            loadProjectFinance();
+        }
+
+        async function loadProjectFinance() {
+            const tbody = document.getElementById('finance-table-body');
+            const rows = await apiCall('/finance') || [];
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-gray-400 text-sm">No transactions yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = rows.map(r => {
+                const range = (r.service_start_date || r.service_end_date)
+                    ? `${fmtDate(r.service_start_date)} → ${fmtDate(r.service_end_date)}`
+                    : '—';
+                const fileCell = r.attachment_filename
+                    ? `<a href="${API_BASE}/finance/${r.id}/attachment?token=${encodeURIComponent(adminToken)}" target="_blank" class="text-blue-600 hover:underline" title="${escapeHtml(r.attachment_filename)}"><i class="fas fa-paperclip"></i></a>`
+                    : '<span class="text-gray-300">—</span>';
+                const amount = Number(r.amount).toFixed(2);
+                const drCr = r.direction === 'Credit'
+                    ? `<span class="text-green-700 font-semibold">CR</span>`
+                    : `<span class="text-red-700 font-semibold">DR</span>`;
+                return `
+                <tr class="hover:bg-gray-50 align-top">
+                    <td class="p-2 border-b text-gray-500">${escapeHtml(r.project_name || '—')}</td>
+                    <td class="p-2 border-b whitespace-nowrap">${fmtDate(r.transaction_date)}</td>
+                    <td class="p-2 border-b">${escapeHtml(r.paid_party)}</td>
+                    <td class="p-2 border-b text-center">${drCr}</td>
+                    <td class="p-2 border-b text-right whitespace-nowrap">$${amount}</td>
+                    <td class="p-2 border-b text-gray-600">${escapeHtml(r.services_description || '—')}</td>
+                    <td class="p-2 border-b text-xs text-gray-500 whitespace-nowrap">${range}</td>
+                    <td class="p-2 border-b text-center">${fileCell}</td>
+                    <td class="p-2 border-b text-center">${sigBadge(r.signature_status)}</td>
+                    <td class="p-2 border-b text-xs text-gray-500">${escapeHtml(r.signature_email || '—')}</td>
+                    <td class="p-2 border-b text-center whitespace-nowrap">
+                        <button type="button" onclick="sendFinanceSignature('${r.id}', '${escapeHtml(r.signature_email || '').replace(/'/g, "\\'")}')"
+                            class="text-gray-500 hover:text-blue-600 mx-1" title="Send for signature">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <button type="button" onclick="deleteFinanceRow('${r.id}')"
+                            class="text-gray-300 hover:text-red-500 mx-1" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function addFinanceRow() {
+            const projectId = document.getElementById('finance-project-select').value;
+            if (!projectId) { alert('Please select a project first.'); return; }
+            const transaction_date = document.getElementById('fin-date').value;
+            const paid_party = document.getElementById('fin-party').value.trim();
+            const direction = document.getElementById('fin-direction').value;
+            const amount = document.getElementById('fin-amount').value;
+            const services_description = document.getElementById('fin-services').value.trim();
+            const service_start_date = document.getElementById('fin-start').value;
+            const service_end_date = document.getElementById('fin-end').value;
+            const fileInput = document.getElementById('fin-file');
+            const statusEl = document.getElementById('fin-add-status');
+            if (!transaction_date) { alert('Transaction date is required.'); return; }
+            if (!paid_party) { alert('Paid By/To is required.'); return; }
+            if (!amount) { alert('Amount is required.'); return; }
+            const fd = new FormData();
+            fd.append('transaction_date', transaction_date);
+            fd.append('paid_party', paid_party);
+            fd.append('direction', direction);
+            fd.append('amount', amount);
+            if (services_description) fd.append('services_description', services_description);
+            if (service_start_date)   fd.append('service_start_date', service_start_date);
+            if (service_end_date)     fd.append('service_end_date', service_end_date);
+            if (fileInput.files.length) fd.append('file', fileInput.files[0]);
+            statusEl.textContent = 'Saving...';
+            const res = await apiCallMultipart(`/projects/${projectId}/finance`, 'POST', fd);
+            if (res) {
+                statusEl.textContent = 'Saved.';
+                document.getElementById('fin-party').value = '';
+                document.getElementById('fin-amount').value = '';
+                document.getElementById('fin-services').value = '';
+                document.getElementById('fin-start').value = '';
+                document.getElementById('fin-end').value = '';
+                fileInput.value = '';
+                loadProjectFinance();
+                setTimeout(() => statusEl.textContent = '', 2000);
+            } else {
+                statusEl.textContent = '';
+            }
+        }
+
+        async function sendFinanceSignature(rowId, defaultEmail) {
+            const recipient = prompt('Send signature request to which email address?', defaultEmail || '');
+            if (!recipient) return;
+            const res = await apiCall(`/finance/${rowId}/send-signature`, 'POST', { signature_email: recipient });
+            if (res) {
+                alert('Signature request sent.');
+                loadProjectFinance();
+            }
+        }
+
+        async function deleteFinanceRow(id) {
+            if (!confirm('Delete this transaction row?')) return;
+            if (await apiCall(`/finance/${id}`, 'DELETE')) loadProjectFinance();
+        }
 </script>
 </body>
 </html>
