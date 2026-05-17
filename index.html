@@ -92,6 +92,14 @@
                             <option value="">Select Customer...</option>
                         </select>
                     </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <textarea id="proj-objective" rows="4" placeholder="Project objective" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                        <textarea id="proj-narrative" rows="4" placeholder="Project narrative / scope / success notes" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <input type="url" id="proj-frontend-repo" placeholder="Frontend GitHub URL" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="url" id="proj-backend-repo" placeholder="Backend GitHub URL" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
                     <button onclick="createProject()" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700">Save Project</button>
                 </div>
 
@@ -116,6 +124,7 @@
                         <button class="pb-2 tab-active" onclick="switchInnerTab('tasks', this)">Tasks</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('team', this)">Team / NDAs</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('billing', this)">Billing Info</button>
+                        <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('audit', this)">AI Audit</button>
                     </div>
 
                     <div id="inner-tasks">
@@ -179,6 +188,89 @@
                     <div id="inner-billing" class="hidden-view">
                         <h3 class="text-lg font-semibold mb-4">Customer Billing Details</h3>
                         <div id="project-customer-info"></div>
+                    </div>
+
+                    <div id="inner-audit" class="hidden-view space-y-6">
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Project Brief & Repository Links</h3>
+                                    <p class="text-sm text-gray-500">Keep the target objective current so the audit compares code against the right brief.</p>
+                                </div>
+                                <button type="button" onclick="saveProjectOverview()" class="bg-slate-800 text-white px-4 py-2 rounded text-sm hover:bg-slate-700">Save Brief</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Project Name</label>
+                                    <input type="text" id="detail-edit-name" class="border p-2 rounded w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Status</label>
+                                    <select id="detail-edit-status" class="border p-2 rounded w-full bg-white">
+                                        <option value="Active">Active</option>
+                                        <option value="On-Hold">On-Hold</option>
+                                        <option value="Completed">Completed</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs text-gray-500 mb-1">Description</label>
+                                    <input type="text" id="detail-edit-description" class="border p-2 rounded w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Objective</label>
+                                    <textarea id="detail-edit-objective" rows="5" class="border p-2 rounded w-full"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Narrative</label>
+                                    <textarea id="detail-edit-narrative" rows="5" class="border p-2 rounded w-full"></textarea>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Frontend GitHub URL</label>
+                                    <input type="url" id="detail-frontend-repo" class="border p-2 rounded w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Backend GitHub URL</label>
+                                    <input type="url" id="detail-backend-repo" class="border p-2 rounded w-full">
+                                </div>
+                            </div>
+                            <div id="project-overview-save-status" class="text-sm text-gray-500 mt-3"></div>
+                        </div>
+
+                        <div class="bg-white border border-gray-200 rounded-lg p-5">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Latest AI Audit</h3>
+                                    <p id="audit-meta" class="text-sm text-gray-500">No audit run yet.</p>
+                                </div>
+                                <button type="button" id="run-audit-btn" onclick="runProjectAudit()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+                                    <i class="fas fa-wand-magic-sparkles mr-2"></i>Run AI Audit
+                                </button>
+                            </div>
+
+                            <div id="repo-link-summary" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5"></div>
+
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-5">
+                                <h4 class="font-semibold text-gray-800 mb-2">Audit Summary</h4>
+                                <div id="audit-summary" class="text-sm text-gray-600 whitespace-pre-wrap">Run an audit to compare the linked repositories against the project brief.</div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                <div class="border border-green-200 bg-green-50 rounded-lg p-4">
+                                    <h4 class="font-semibold text-green-800 mb-3">Implemented</h4>
+                                    <div id="audit-implemented" class="space-y-3 text-sm text-green-900"></div>
+                                </div>
+                                <div class="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                                    <h4 class="font-semibold text-amber-800 mb-3">Partial / Unclear</h4>
+                                    <div id="audit-uncertain" class="space-y-3 text-sm text-amber-900"></div>
+                                </div>
+                                <div class="border border-rose-200 bg-rose-50 rounded-lg p-4">
+                                    <h4 class="font-semibold text-rose-800 mb-3">Remaining Tasks</h4>
+                                    <div id="audit-remaining" class="space-y-3 text-sm text-rose-900"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -564,11 +656,18 @@
 
         // --- DASHBOARD LOGIC ---
         let currentProjectId = null;
+        let currentProjectAudit = null;
+        let currentProjectRepositories = { frontend: null, backend: null };
+        let auditPollTimer = null;
         let globalCustomers = [];
         let globalProjects = [];
         let globalEmployees = [];
 
         function switchView(viewId) {
+            if (viewId !== 'project-details' && auditPollTimer) {
+                clearTimeout(auditPollTimer);
+                auditPollTimer = null;
+            }
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-view'));
             document.getElementById(`view-${viewId}`).classList.remove('hidden-view');
 
@@ -589,13 +688,47 @@
         }
 
         function switchInnerTab(tabName, btnElement) {
-            ['tasks', 'team', 'billing'].forEach(t => document.getElementById(`inner-${t}`).classList.add('hidden-view'));
+            ['tasks', 'team', 'billing', 'audit'].forEach(t => document.getElementById(`inner-${t}`).classList.add('hidden-view'));
             document.getElementById(`inner-${tabName}`).classList.remove('hidden-view');
 
             document.querySelectorAll('#view-project-details .border-b button').forEach(b => b.classList.remove('tab-active', 'text-gray-800'));
             btnElement.classList.add('tab-active', 'text-gray-800');
 
             if (tabName === 'team') loadProjectMembers();
+            if (tabName === 'audit') loadProjectAuditPanel();
+        }
+
+        function getProjectAiBadge(project) {
+            if (!project.ai_audit_status) {
+                return '<span class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-600">No Audit</span>';
+            }
+            if (project.ai_audit_status === 'queued' || project.ai_audit_status === 'running') {
+                return '<span class="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700">Audit Running</span>';
+            }
+            if (project.ai_audit_status === 'failed') {
+                return '<span class="text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">Audit Failed</span>';
+            }
+            if ((project.ai_remaining_count || 0) > 0) {
+                return '<span class="text-xs font-semibold px-2 py-1 rounded-full bg-amber-100 text-amber-700">Needs Work</span>';
+            }
+            return '<span class="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700">Mostly Complete</span>';
+        }
+
+        function resetProjectForm() {
+            ['proj-name', 'proj-desc', 'proj-objective', 'proj-narrative', 'proj-frontend-repo', 'proj-backend-repo'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+        }
+
+        function applyProjectHeader(project) {
+            document.getElementById('detail-proj-name').innerText = project.name;
+            document.getElementById('detail-proj-desc').innerText = project.description || '';
+            const statusEl = document.getElementById('detail-proj-status');
+            statusEl.textContent = project.status;
+            statusEl.className = `px-3 py-1 rounded-full text-sm font-semibold ${
+                project.status === 'Active' ? 'bg-green-100 text-green-800' :
+                project.status === 'On-Hold' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-gray-100 text-gray-700'}`;
         }
 
         // --- THE MAGIC SIMPLE REQUEST FUNCTION ---
@@ -688,9 +821,14 @@
                 return `
                 <div onclick="openProject('${p.id}')"
                      class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-blue-400 transition relative">
-                    <div class="flex justify-between items-start mb-3">
-                        <h3 class="text-xl font-bold text-gray-800 pr-8">${p.name}</h3>
-                        <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusLabel}">${p.status}</span>
+                    <div class="flex justify-between items-start gap-3 mb-3">
+                        <div class="pr-4">
+                            <h3 class="text-xl font-bold text-gray-800">${p.name}</h3>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusLabel}">${p.status}</span>
+                            ${getProjectAiBadge(p)}
+                        </div>
                     </div>
                     <p class="text-gray-500 text-sm mb-4 line-clamp-2">${p.description || 'No description'}</p>
                     <div class="flex items-center justify-between border-t pt-3 mt-2">
@@ -711,32 +849,33 @@
             const data = {
                 name: document.getElementById('proj-name').value,
                 description: document.getElementById('proj-desc').value,
-                customer_id: document.getElementById('proj-customer').value
+                customer_id: document.getElementById('proj-customer').value,
+                objective: document.getElementById('proj-objective').value,
+                narrative: document.getElementById('proj-narrative').value,
+                frontend_github_url: document.getElementById('proj-frontend-repo').value,
+                backend_github_url: document.getElementById('proj-backend-repo').value
             };
             if (!data.name || !data.customer_id) return alert("Name and Customer are required.");
             if (await apiCall('/projects', 'POST', data)) {
                 document.getElementById('new-project-form').classList.add('hidden');
-                document.getElementById('proj-name').value = '';
-                document.getElementById('proj-desc').value = '';
+                resetProjectForm();
                 loadProjects();
             }
         }
 
         // 3. Project Details
-        function openProject(id) {
+        async function openProject(id) {
             const project = globalProjects.find(p => p.id === id);
             if (!project) return;
             currentProjectId = id;
+            currentProjectAudit = null;
+            currentProjectRepositories = { frontend: null, backend: null };
+            if (auditPollTimer) {
+                clearTimeout(auditPollTimer);
+                auditPollTimer = null;
+            }
 
-            document.getElementById('detail-proj-name').innerText = project.name;
-            document.getElementById('detail-proj-desc').innerText = project.description || '';
-
-            const statusEl = document.getElementById('detail-proj-status');
-            statusEl.textContent = project.status;
-            statusEl.className = `px-3 py-1 rounded-full text-sm font-semibold ${
-                project.status === 'Active' ? 'bg-green-100 text-green-800' :
-                project.status === 'On-Hold' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-gray-100 text-gray-700'}`;
+            applyProjectHeader(project);
 
             // Billing Info tab
             const customer = globalCustomers.find(c => c.id === project.customer_id);
@@ -760,6 +899,210 @@
             document.getElementById('view-project-details').classList.remove('hidden-view');
 
             loadTasks();
+            await loadProjectAuditPanel();
+        }
+
+        async function loadProjectAuditPanel() {
+            if (!currentProjectId) return;
+            const project = globalProjects.find(p => p.id === currentProjectId);
+            if (project) {
+                document.getElementById('detail-edit-name').value = project.name || '';
+                document.getElementById('detail-edit-description').value = project.description || '';
+                document.getElementById('detail-edit-objective').value = project.objective || '';
+                document.getElementById('detail-edit-narrative').value = project.narrative || '';
+                document.getElementById('detail-edit-status').value = project.status || 'Active';
+            }
+
+            currentProjectRepositories = await apiCall(`/projects/${currentProjectId}/repositories`) || { frontend: null, backend: null };
+            document.getElementById('detail-frontend-repo').value = currentProjectRepositories.frontend?.github_url || '';
+            document.getElementById('detail-backend-repo').value = currentProjectRepositories.backend?.github_url || '';
+            renderRepoLinkSummary();
+
+            const latestAudit = await apiCall(`/projects/${currentProjectId}/ai-audits/latest`);
+            if (latestAudit && latestAudit.status !== 'not_started') {
+                currentProjectAudit = latestAudit;
+                renderAudit(latestAudit);
+                if (latestAudit.status === 'queued' || latestAudit.status === 'running') scheduleAuditPoll();
+            } else {
+                currentProjectAudit = null;
+                renderAudit(null);
+            }
+        }
+
+        function renderRepoLinkSummary() {
+            const container = document.getElementById('repo-link-summary');
+            const cards = ['frontend', 'backend'].map(role => {
+                const item = currentProjectRepositories[role];
+                if (!item || !item.github_url) {
+                    return `<div class="border border-dashed border-gray-300 rounded-lg p-4 text-sm text-gray-400">No ${role} repo linked yet.</div>`;
+                }
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between gap-3 mb-2">
+                            <span class="font-semibold text-gray-800 capitalize">${role}</span>
+                            <span class="text-xs px-2 py-1 rounded-full ${item.is_private ? 'bg-slate-100 text-slate-700' : 'bg-emerald-100 text-emerald-700'}">${item.is_private ? 'Private' : 'Public'}</span>
+                        </div>
+                        <a href="${escapeHtml(item.github_url)}" target="_blank" class="text-sm text-blue-600 hover:underline break-all">${escapeHtml(item.github_url)}</a>
+                        <div class="text-xs text-gray-500 mt-2">
+                            Branch: ${escapeHtml(item.default_branch || '—')}<br>
+                            Last sync: ${fmtDate(item.last_sync_at)}<br>
+                            Commit: ${escapeHtml(item.last_commit_sha || '—')}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = cards.join('');
+        }
+
+        async function saveProjectOverview() {
+            if (!currentProjectId) return;
+            const statusEl = document.getElementById('project-overview-save-status');
+            statusEl.textContent = 'Saving...';
+
+            const payload = {
+                name: document.getElementById('detail-edit-name').value,
+                description: document.getElementById('detail-edit-description').value,
+                objective: document.getElementById('detail-edit-objective').value,
+                narrative: document.getElementById('detail-edit-narrative').value,
+                status: document.getElementById('detail-edit-status').value
+            };
+            const projectRes = await apiCall(`/projects/${currentProjectId}`, 'PUT', payload);
+            if (!projectRes) {
+                statusEl.textContent = '';
+                return;
+            }
+
+            const repoRes = await apiCall(`/projects/${currentProjectId}/repositories`, 'PUT', {
+                frontend_github_url: document.getElementById('detail-frontend-repo').value,
+                backend_github_url: document.getElementById('detail-backend-repo').value
+            });
+            if (!repoRes) {
+                statusEl.textContent = '';
+                return;
+            }
+
+            currentProjectRepositories = repoRes;
+            renderRepoLinkSummary();
+            await loadProjects();
+            const refreshed = globalProjects.find(p => p.id === currentProjectId);
+            if (refreshed) applyProjectHeader(refreshed);
+            statusEl.textContent = 'Saved project brief and repository links.';
+            setTimeout(() => statusEl.textContent = '', 2200);
+        }
+
+        function formatTimestamp(ts) {
+            return ts ? new Date(ts).toLocaleString() : '—';
+        }
+
+        function simpleMarkdownToHtml(text) {
+            return escapeHtml(text || '')
+                .replace(/^### (.*)$/gm, '<h5 class="font-semibold mt-3 mb-1">$1</h5>')
+                .replace(/^## (.*)$/gm, '<h4 class="font-semibold mt-3 mb-1">$1</h4>')
+                .replace(/^# (.*)$/gm, '<h3 class="font-semibold mt-3 mb-1">$1</h3>')
+                .replace(/^- (.*)$/gm, '<div class="ml-3">• $1</div>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function renderFeatureGroup(items, emptyText) {
+            if (!items.length) return `<p class="text-sm opacity-80">${emptyText}</p>`;
+            return items.map(item => `
+                <div class="bg-white/70 rounded border border-current/10 p-3">
+                    <div class="font-semibold">${escapeHtml(item.feature || item.title || 'Untitled')}</div>
+                    <div class="text-xs mt-1 opacity-80">${escapeHtml(item.notes || item.description || '')}</div>
+                    ${(item.evidence_paths || []).length ? `<div class="text-xs mt-2 opacity-70">Evidence: ${escapeHtml(item.evidence_paths.join(', '))}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderRemainingTasks(tasks) {
+            if (!tasks.length) return '<p class="text-sm opacity-80">No remaining tasks were returned.</p>';
+            return tasks.map(task => `
+                <div class="bg-white/70 rounded border border-current/10 p-3">
+                    <div class="font-semibold">${escapeHtml(task.title)}</div>
+                    <div class="text-xs mt-1 opacity-80">${escapeHtml(task.description || '')}</div>
+                    <div class="text-xs mt-2 opacity-80">Priority: ${escapeHtml(task.priority || 'medium')} | Area: ${escapeHtml(task.repo_role || 'unknown')}</div>
+                    ${(task.acceptance_criteria || []).length ? `<div class="text-xs mt-2 opacity-80">Acceptance: ${escapeHtml(task.acceptance_criteria.join(' | '))}</div>` : ''}
+                    <div class="mt-3">
+                        <button type="button" onclick="generateImplementationPlan('${task.id}')" class="bg-rose-600 text-white px-3 py-2 rounded text-xs hover:bg-rose-700">
+                            Implementation Instructions Plan
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAudit(audit) {
+            const meta = document.getElementById('audit-meta');
+            const summary = document.getElementById('audit-summary');
+            const implementedEl = document.getElementById('audit-implemented');
+            const uncertainEl = document.getElementById('audit-uncertain');
+            const remainingEl = document.getElementById('audit-remaining');
+            const runBtn = document.getElementById('run-audit-btn');
+
+            if (!audit) {
+                meta.textContent = 'No audit run yet.';
+                summary.textContent = 'Run an audit to compare the linked repositories against the project brief.';
+                implementedEl.innerHTML = '<p class="text-sm opacity-80">No findings yet.</p>';
+                uncertainEl.innerHTML = '<p class="text-sm opacity-80">No findings yet.</p>';
+                remainingEl.innerHTML = '<p class="text-sm opacity-80">No tasks yet.</p>';
+                runBtn.disabled = false;
+                runBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles mr-2"></i>Run AI Audit';
+                return;
+            }
+
+            const isRunning = audit.status === 'queued' || audit.status === 'running';
+            meta.textContent = `Status: ${audit.status} | Requested: ${formatTimestamp(audit.requested_at)} | Completed: ${formatTimestamp(audit.completed_at)}`;
+            summary.innerHTML = audit.error_message
+                ? `<span class="text-red-600">${escapeHtml(audit.error_message)}</span>`
+                : simpleMarkdownToHtml(audit.summary_markdown || '');
+
+            const features = audit.feature_completion || [];
+            implementedEl.innerHTML = renderFeatureGroup(features.filter(f => f.status === 'implemented'), 'No implemented features were captured.');
+            uncertainEl.innerHTML = renderFeatureGroup(features.filter(f => f.status === 'partial' || f.status === 'uncertain'), 'No partial or unclear findings were captured.');
+            remainingEl.innerHTML = renderRemainingTasks(audit.remaining_tasks || []);
+
+            runBtn.disabled = isRunning;
+            runBtn.innerHTML = isRunning
+                ? '<i class="fas fa-spinner fa-spin mr-2"></i>Audit Running...'
+                : '<i class="fas fa-wand-magic-sparkles mr-2"></i>Run AI Audit';
+        }
+
+        function scheduleAuditPoll() {
+            if (auditPollTimer) clearTimeout(auditPollTimer);
+            auditPollTimer = setTimeout(async () => {
+                if (!currentProjectId) return;
+                const latestAudit = await apiCall(`/projects/${currentProjectId}/ai-audits/latest`);
+                if (latestAudit && latestAudit.status !== 'not_started') {
+                    currentProjectAudit = latestAudit;
+                    renderAudit(latestAudit);
+                    await loadProjects();
+                    if (latestAudit.status === 'queued' || latestAudit.status === 'running') {
+                        scheduleAuditPoll();
+                    }
+                }
+            }, 5000);
+        }
+
+        async function runProjectAudit() {
+            if (!currentProjectId) return;
+            if (!document.getElementById('detail-frontend-repo').value && !document.getElementById('detail-backend-repo').value) {
+                alert('Add at least one repository link before running an audit.');
+                return;
+            }
+            const res = await apiCall(`/projects/${currentProjectId}/ai-audits`, 'POST', {});
+            if (res) {
+                currentProjectAudit = res;
+                renderAudit(res);
+                scheduleAuditPoll();
+                loadProjects();
+            }
+        }
+
+        async function generateImplementationPlan(taskId) {
+            const res = await apiCall(`/audit-tasks/${taskId}/implementation-plan`, 'POST', {});
+            if (!res) return;
+            window.open(`${API_BASE}/audit-tasks/${taskId}/implementation-plan/download?token=${encodeURIComponent(adminToken)}`, '_blank');
+            await loadProjectAuditPanel();
         }
 
         async function loadTasks() {
@@ -893,7 +1236,7 @@
             const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const base = isLocal
                 ? `${window.location.protocol}//${window.location.host}${window.location.pathname.replace(/\/[^/]*$/, '')}`
-                : 'https://fly-ai-solutions.github.io';
+                : 'https://fly-ai-solutions.github.io/flyai_admin_frontend/';
             return `${base}/sign.html?token=${token}`;
         }
 
