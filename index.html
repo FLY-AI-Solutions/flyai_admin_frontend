@@ -55,6 +55,15 @@
                 <button onclick="switchView('invoices')" id="nav-invoices" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
                     <i class="fas fa-file-invoice-dollar w-5"></i> Invoicing
                 </button>
+                <button onclick="switchView('documents')" id="nav-documents" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
+                    <i class="fas fa-file-contract w-5"></i> Contract Documents
+                </button>
+                <button onclick="switchView('status')" id="nav-status" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
+                    <i class="fas fa-tasks w-5"></i> Status
+                </button>
+                <button onclick="switchView('finance')" id="nav-finance" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
+                    <i class="fas fa-dollar-sign w-5"></i> Finance
+                </button>
             </nav>
             <div class="p-4 border-t border-slate-700 text-sm flex justify-between items-center">
                 <span class="text-slate-400">Welcome back</span>
@@ -103,7 +112,7 @@
                         <span id="detail-proj-status" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Active</span>
                     </div>
 
-                    <div class="flex space-x-6 border-b border-gray-200 mb-6">
+                    <div class="flex space-x-6 border-b border-gray-200 mb-6 flex-wrap">
                         <button class="pb-2 tab-active" onclick="switchInnerTab('tasks', this)">Tasks</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('team', this)">Team / NDAs</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('billing', this)">Billing Info</button>
@@ -133,14 +142,228 @@
                     </div>
 
                     <div id="inner-team" class="hidden-view">
-                        <h3 class="text-lg font-semibold mb-4">Assigned Team & NDAs</h3>
-                        <p class="text-gray-500 text-sm">Select employees/contractors and generate standard NDA documents for this project.</p>
+                        <div class="flex justify-between items-center mb-5">
+                            <h3 class="text-lg font-semibold">Team & Contracts</h3>
+                            <div class="flex gap-2 items-center">
+                                <select id="add-member-select" class="border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]">
+                                    <option value="">Add team member...</option>
+                                </select>
+                                <button type="button" onclick="addProjectMember()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
+                                    <i class="fas fa-plus mr-1"></i>Add
+                                </button>
+                            </div>
+                        </div>
+                        <div id="project-team-list" class="space-y-3 mb-4"></div>
+                        <!-- Inline contract editor -->
+                        <div id="contract-editor" class="hidden mt-4 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Contract for <span id="contract-for-name" class="text-blue-700"></span></h4>
+                                    <p class="text-xs text-gray-500 mt-0.5">Edit then send for digital signature.</p>
+                                </div>
+                                <button onclick="closeContractEditor()" class="text-gray-400 hover:text-red-500 transition mt-0.5"><i class="fas fa-times"></i></button>
+                            </div>
+                            <textarea id="contract-text-area" rows="18"
+                                class="w-full border border-gray-300 rounded p-3 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none resize-y bg-white"></textarea>
+                            <div class="mt-4 flex gap-3 items-center">
+                                <button onclick="sendContract()" id="send-contract-btn"
+                                    class="bg-blue-600 text-white px-5 py-2 rounded font-semibold text-sm hover:bg-blue-700 transition">
+                                    <i class="fas fa-paper-plane mr-2"></i>Send for Signature
+                                </button>
+                                <button onclick="closeContractEditor()" class="text-gray-500 hover:text-gray-700 text-sm">Cancel</button>
+                                <span id="contract-send-status" class="text-sm ml-1"></span>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="inner-billing" class="hidden-view">
                         <h3 class="text-lg font-semibold mb-4">Customer Billing Details</h3>
-                        <div id="project-customer-info" class="bg-gray-50 p-4 rounded border">
+                        <div id="project-customer-info"></div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- ===== CONTRACT DOCUMENTS ===== -->
+            <section id="view-documents" class="view-section hidden-view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Contract Documents</h2>
+
+                <!-- Project selector -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-4">
+                    <label class="text-sm font-medium text-gray-600 whitespace-nowrap">Select Project:</label>
+                    <select id="docs-project-select" class="border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 flex-1 max-w-xs">
+                        <option value="">— choose a project —</option>
+                    </select>
+                </div>
+
+                <!-- Upload form -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Upload Document</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        <input type="text" id="doc-name" placeholder="Document name" class="border p-2 rounded text-sm">
+                        <input type="text" id="doc-description" placeholder="Description (optional)" class="border p-2 rounded text-sm md:col-span-2">
+                    </div>
+                    <div class="flex gap-3 items-center flex-wrap">
+                        <input type="file" id="doc-file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="text-sm">
+                        <button type="button" onclick="addProjectDocument()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
+                            <i class="fas fa-upload mr-1"></i>Upload
+                        </button>
+                        <span id="doc-upload-status" class="text-sm text-gray-500"></span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">Allowed: PDF, DOC, DOCX, PNG, JPG/JPEG. Max 25 MB.</p>
+                </div>
+
+                <!-- Documents table -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 text-sm">
+                                    <th class="p-3 border-b">Project</th>
+                                    <th class="p-3 border-b">Name</th>
+                                    <th class="p-3 border-b">Description</th>
+                                    <th class="p-3 border-b">File</th>
+                                    <th class="p-3 border-b w-32">Uploaded</th>
+                                    <th class="p-3 border-b w-32 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documents-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== STATUS ===== -->
+            <section id="view-status" class="view-section hidden-view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Project Status</h2>
+
+                <!-- Project selector -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-4">
+                    <label class="text-sm font-medium text-gray-600 whitespace-nowrap">Select Project:</label>
+                    <select id="status-project-select" class="border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 flex-1 max-w-xs">
+                        <option value="">— choose a project —</option>
+                    </select>
+                </div>
+
+                <!-- Add status form -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Add Status Entry</h3>
+                    <div class="flex gap-3 items-start flex-wrap">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Date</label>
+                            <input type="date" id="status-date" class="border p-2 rounded text-sm">
                         </div>
+                        <div class="flex-1 min-w-[260px]">
+                            <label class="block text-xs text-gray-500 mb-1">Description</label>
+                            <textarea id="status-description" placeholder="Status description..." rows="2" class="border p-2 rounded text-sm w-full"></textarea>
+                        </div>
+                        <div class="pt-5">
+                            <button type="button" onclick="addProjectStatus()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
+                                <i class="fas fa-plus mr-1"></i>Add Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status table -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 text-sm">
+                                    <th class="p-3 border-b">Project</th>
+                                    <th class="p-3 border-b w-40">Date</th>
+                                    <th class="p-3 border-b">Description</th>
+                                    <th class="p-3 border-b w-20 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statuses-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== FINANCE ===== -->
+            <section id="view-finance" class="view-section hidden-view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Finance</h2>
+
+                <!-- Project selector -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-4">
+                    <label class="text-sm font-medium text-gray-600 whitespace-nowrap">Select Project:</label>
+                    <select id="finance-project-select" class="border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 flex-1 max-w-xs">
+                        <option value="">— choose a project —</option>
+                    </select>
+                </div>
+
+                <!-- Add transaction form -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Add Transaction</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Transaction Date</label>
+                            <input type="date" id="fin-date" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Paid By / Paid To</label>
+                            <input type="text" id="fin-party" placeholder="Name or company" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Direction</label>
+                            <select id="fin-direction" class="border p-2 rounded text-sm w-full bg-white">
+                                <option value="Debit">Debit</option>
+                                <option value="Credit">Credit</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Amount (USD)</label>
+                            <input type="number" step="0.01" id="fin-amount" placeholder="0.00" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-xs text-gray-500 mb-1">Services Description</label>
+                            <textarea id="fin-services" rows="2" placeholder="What was paid for..." class="border p-2 rounded text-sm w-full"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Service Start Date</label>
+                            <input type="date" id="fin-start" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Service End Date</label>
+                            <input type="date" id="fin-end" class="border p-2 rounded text-sm w-full">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-500 mb-1">Attachment (optional)</label>
+                            <input type="file" id="fin-file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="text-sm">
+                        </div>
+                    </div>
+                    <div class="flex gap-3 items-center">
+                        <button type="button" onclick="addFinanceRow()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
+                            <i class="fas fa-plus mr-1"></i>Add Transaction
+                        </button>
+                        <span id="fin-add-status" class="text-sm text-gray-500"></span>
+                    </div>
+                </div>
+
+                <!-- Finance table -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600">
+                                    <th class="p-2 border-b">Project</th>
+                                    <th class="p-2 border-b">Date</th>
+                                    <th class="p-2 border-b">Paid By/To</th>
+                                    <th class="p-2 border-b">Dr/Cr</th>
+                                    <th class="p-2 border-b text-right">Amount</th>
+                                    <th class="p-2 border-b">Services</th>
+                                    <th class="p-2 border-b">Service Range</th>
+                                    <th class="p-2 border-b text-center">File</th>
+                                    <th class="p-2 border-b text-center">Signature</th>
+                                    <th class="p-2 border-b">Sig Email</th>
+                                    <th class="p-2 border-b text-center w-24">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="finance-table-body"></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -149,7 +372,7 @@
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Customers</h2>
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
                     <h3 class="text-lg font-semibold mb-4">Add New Customer</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <input type="text" id="cust-biz" placeholder="Business Name" class="border p-2 rounded">
                         <input type="text" id="cust-person" placeholder="Contact Person" class="border p-2 rounded">
                         <input type="email" id="cust-email" placeholder="Email" class="border p-2 rounded">
@@ -157,14 +380,16 @@
                     </div>
                     <button onclick="addCustomer()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save Customer</button>
                 </div>
-                
+
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-gray-50 text-gray-600">
+                        <thead class="bg-gray-50 text-gray-600 text-sm">
                             <tr>
                                 <th class="p-4 border-b">Business</th>
                                 <th class="p-4 border-b">Contact</th>
                                 <th class="p-4 border-b">Email</th>
+                                <th class="p-4 border-b">Billing Address</th>
+                                <th class="p-4 border-b w-16"></th>
                             </tr>
                         </thead>
                         <tbody id="customers-table-body" class="divide-y divide-gray-100">
@@ -188,34 +413,73 @@
                     </div>
                     <button onclick="addEmployee()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Member</button>
                 </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-600 text-sm">
+                            <tr>
+                                <th class="p-4 border-b">Name</th>
+                                <th class="p-4 border-b">Email</th>
+                                <th class="p-4 border-b">Role</th>
+                                <th class="p-4 border-b">Since</th>
+                                <th class="p-4 border-b w-16"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="employees-table-body" class="divide-y divide-gray-100">
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="view-invoices" class="view-section hidden-view">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6">Generate Invoice</h2>
-                <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200 max-w-2xl">
-                    <form id="invoiceForm" class="space-y-6">
-                        <div class="grid grid-cols-2 gap-6">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">Invoicing</h2>
+
+                <!-- Sub-tabs -->
+                <div class="flex space-x-6 border-b border-gray-200 mb-6">
+                    <button class="pb-2 tab-active text-sm font-medium" id="inv-tab-create" onclick="switchInvTab('create', this)">Create Invoice</button>
+                    <button class="pb-2 text-gray-500 hover:text-gray-800 text-sm font-medium" id="inv-tab-list" onclick="switchInvTab('list', this)">List Invoices</button>
+                </div>
+
+                <!-- Create Invoice Panel -->
+                <div id="inv-create-panel">
+                    <div class="bg-white p-8 rounded-lg shadow-sm border border-gray-200 max-w-2xl">
+                        <form id="invoiceForm" class="space-y-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Select Project</label>
                                 <select id="inv-project" required class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none bg-white">
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Amount (USD)</label>
-                                <input type="number" id="inv-amount" step="0.01" required placeholder="0.00" class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-sm font-medium text-gray-700">Invoice Items</label>
+                                    <button type="button" onclick="addLineItem()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                        <i class="fas fa-plus mr-1"></i>Add Item
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-[1fr_140px_32px] gap-2 mb-1 px-1">
+                                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wide">Description</span>
+                                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wide">Amount (USD)</span>
+                                    <span></span>
+                                </div>
+                                <div id="line-items-container" class="space-y-2"></div>
+                                <div class="mt-3 pt-3 border-t border-gray-100 flex justify-end items-center gap-2">
+                                    <span class="text-sm text-gray-500">Total:</span>
+                                    <span id="inv-total" class="text-base font-bold text-gray-800">$0.00</span>
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Description / Line Item</label>
-                            <input type="text" id="inv-desc" required placeholder="e.g., Milestone 1 Completion" class="block w-full border border-gray-300 rounded p-2 focus:ring-blue-500 outline-none">
-                        </div>
-                        <div class="pt-2">
-                            <button type="submit" id="submitInvBtn" class="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition flex justify-center items-center">
-                                <i class="fas fa-paper-plane mr-2"></i> Generate & Email Stripe Link
-                            </button>
-                        </div>
-                    </form>
-                    <div id="inv-status" class="mt-4 p-4 rounded hidden"></div>
+                            <div class="pt-2">
+                                <button type="submit" id="submitInvBtn" class="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition flex justify-center items-center">
+                                    <i class="fas fa-paper-plane mr-2"></i> Generate & Email Stripe Link
+                                </button>
+                            </div>
+                        </form>
+                        <div id="inv-status" class="mt-4 p-4 rounded hidden"></div>
+                    </div>
+                </div>
+
+                <!-- List Invoices Panel -->
+                <div id="inv-list-panel" class="hidden-view">
+                    <div id="invoices-list-container" class="space-y-6"></div>
                 </div>
             </section>
 
@@ -224,7 +488,9 @@
 
     <script>
         // CONFIGURATION
-        const API_BASE = "https://jerin-api.flyai.online/x004/api";
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://127.0.0.1:8000/x004/api'
+            : 'https://jerin-api.flyai.online/x004/api';
         
         // --- AUTHENTICATION LOGIC ---
         let adminToken = sessionStorage.getItem('flyai_admin_token') || null;
@@ -268,7 +534,7 @@
         function showDashboard() {
             document.getElementById('login-overlay').classList.add('hidden-view');
             document.getElementById('dashboard-wrapper').classList.remove('hidden-view');
-            loadCustomers().then(() => loadProjects());
+            loadCustomers().then(() => Promise.all([loadProjects(), loadEmployees()]));
         }
 
         function logout() {
@@ -300,11 +566,12 @@
         let currentProjectId = null;
         let globalCustomers = [];
         let globalProjects = [];
+        let globalEmployees = [];
 
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-view'));
             document.getElementById(`view-${viewId}`).classList.remove('hidden-view');
-            
+
             document.querySelectorAll('aside nav button').forEach(btn => {
                 btn.classList.remove('bg-blue-600', 'text-white');
                 btn.classList.add('text-slate-300');
@@ -312,70 +579,83 @@
             document.getElementById(`nav-${viewId}`).classList.add('bg-blue-600', 'text-white');
             document.getElementById(`nav-${viewId}`).classList.remove('text-slate-300');
 
-            if(viewId === 'projects') loadProjects();
-            if(viewId === 'customers') loadCustomers();
-            if(viewId === 'invoices') populateInvoiceDropdowns();
-            // Note: Add logic here later if you create a loadEmployees() function
+            if (viewId === 'projects')   loadProjects();
+            if (viewId === 'customers')  loadCustomers();
+            if (viewId === 'employees')  loadEmployees();
+            if (viewId === 'invoices')   populateInvoiceDropdowns();
+            if (viewId === 'documents')  initDocumentsView();
+            if (viewId === 'status')     initStatusView();
+            if (viewId === 'finance')    initFinanceView();
         }
 
         function switchInnerTab(tabName, btnElement) {
             ['tasks', 'team', 'billing'].forEach(t => document.getElementById(`inner-${t}`).classList.add('hidden-view'));
             document.getElementById(`inner-${tabName}`).classList.remove('hidden-view');
-            
+
             document.querySelectorAll('#view-project-details .border-b button').forEach(b => b.classList.remove('tab-active', 'text-gray-800'));
             btnElement.classList.add('tab-active', 'text-gray-800');
+
+            if (tabName === 'team') loadProjectMembers();
         }
 
         // --- THE MAGIC SIMPLE REQUEST FUNCTION ---
         async function apiCall(endpoint, method = 'GET', body = null) {
             try {
-                // 1. Always append token to URL
                 const url = `${API_BASE}${endpoint}?token=${adminToken}`;
-                const options = { method: method };
-                
-                // 2. Format body as Form Data instead of JSON to avoid Preflight
+                const options = { method };
+
                 if (body && (method === 'POST' || method === 'PUT')) {
                     const formData = new URLSearchParams();
                     for (const key in body) {
-                        if(body[key] !== null && body[key] !== undefined) {
+                        if (body[key] !== null && body[key] !== undefined)
                             formData.append(key, body[key]);
-                        }
                     }
                     options.body = formData;
                 }
-                
-                // 3. Notice: NO HEADERS ATTACHED AT ALL
+
                 const res = await fetch(url, options);
-                
+
                 if (res.status === 401) {
                     alert("Session expired. Please log in again.");
                     logout();
                     return null;
                 }
-                
-                if (!res.ok) throw new Error(await res.text());
+
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    throw new Error(msg);
+                }
+
                 return await res.json();
             } catch (err) {
                 console.error("API Error:", err);
-                alert("An error occurred connecting to the backend.");
+                alert(err.message || "Could not connect to the backend.");
                 return null;
             }
         }
 
         // 1. Customers
         async function loadCustomers() {
-            globalCustomers = await apiCall('/customers') || []; 
+            globalCustomers = await apiCall('/customers') || [];
             const tbody = document.getElementById('customers-table-body');
             tbody.innerHTML = globalCustomers.map(c => `
                 <tr class="hover:bg-gray-50">
                     <td class="p-4 font-medium">${c.business_name}</td>
-                    <td class="p-4">${c.contact_person}</td>
+                    <td class="p-4">${c.contact_person || '—'}</td>
                     <td class="p-4 text-blue-600">${c.email}</td>
+                    <td class="p-4 text-gray-500 text-sm">${c.billing_address || '—'}</td>
+                    <td class="p-4">
+                        <button onclick="deleteCustomer('${c.id}', '${c.business_name.replace(/'/g, "\\'")}')"
+                            class="text-gray-300 hover:text-red-500 transition" title="Delete customer">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
-            
+
             const select = document.getElementById('proj-customer');
-            select.innerHTML = '<option value="">Select Customer...</option>' + 
+            select.innerHTML = '<option value="">Select Customer...</option>' +
                 globalCustomers.map(c => `<option value="${c.id}">${c.business_name}</option>`).join('');
         }
 
@@ -386,7 +666,8 @@
                 email: document.getElementById('cust-email').value,
                 billing_address: document.getElementById('cust-address').value
             };
-            if(await apiCall('/customers', 'POST', data)) {
+            if (!data.business_name || !data.email) return alert("Business name and email are required.");
+            if (await apiCall('/customers', 'POST', data)) {
                 document.querySelectorAll('#view-customers input').forEach(i => i.value = '');
                 loadCustomers();
             }
@@ -396,14 +677,34 @@
         async function loadProjects() {
             globalProjects = await apiCall('/projects') || [];
             const container = document.getElementById('projects-container');
-            container.innerHTML = globalProjects.map(p => `
-                <div onclick="openProject('${p.id}', '${p.name.replace(/'/g, "\\'")}', '${(p.description || '').replace(/'/g, "\\'")}')" 
+            if (!globalProjects.length) {
+                container.innerHTML = '<p class="text-gray-400 col-span-3 py-8 text-center">No projects yet. Click <b>New Project</b> to get started.</p>';
+                return;
+            }
+            container.innerHTML = globalProjects.map(p => {
+                const customer = globalCustomers.find(c => c.id === p.customer_id);
+                const statusColor = p.status === 'Active' ? 'bg-green-500' : p.status === 'On-Hold' ? 'bg-yellow-400' : 'bg-gray-400';
+                const statusLabel = p.status === 'Active' ? 'text-green-700 bg-green-50' : p.status === 'On-Hold' ? 'text-yellow-700 bg-yellow-50' : 'text-gray-600 bg-gray-100';
+                return `
+                <div onclick="openProject('${p.id}')"
                      class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md hover:border-blue-400 transition relative">
-                    <h3 class="text-xl font-bold mb-2 text-gray-800">${p.name}</h3>
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="text-xl font-bold text-gray-800 pr-8">${p.name}</h3>
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusLabel}">${p.status}</span>
+                    </div>
                     <p class="text-gray-500 text-sm mb-4 line-clamp-2">${p.description || 'No description'}</p>
-                    <div class="absolute top-6 right-6 w-3 h-3 rounded-full ${p.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}"></div>
-                </div>
-            `).join('');
+                    <div class="flex items-center justify-between border-t pt-3 mt-2">
+                        <div class="flex items-center gap-2 text-xs text-gray-400">
+                            <i class="fas fa-building"></i>
+                            <span>${customer ? customer.business_name : '<span class="italic">No client linked</span>'}</span>
+                        </div>
+                        <button onclick="event.stopPropagation(); deleteProject('${p.id}', '${p.name.replace(/'/g, "\\'")}')"
+                            class="text-gray-300 hover:text-red-500 transition" title="Delete project">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         async function createProject() {
@@ -412,9 +713,8 @@
                 description: document.getElementById('proj-desc').value,
                 customer_id: document.getElementById('proj-customer').value
             };
-            if(!data.name || !data.customer_id) return alert("Name and Customer are required");
-            
-            if(await apiCall('/projects', 'POST', data)) {
+            if (!data.name || !data.customer_id) return alert("Name and Customer are required.");
+            if (await apiCall('/projects', 'POST', data)) {
                 document.getElementById('new-project-form').classList.add('hidden');
                 document.getElementById('proj-name').value = '';
                 document.getElementById('proj-desc').value = '';
@@ -422,15 +722,43 @@
             }
         }
 
-        // 3. Tasks inside Project Details
-        async function openProject(id, name, desc) {
+        // 3. Project Details
+        function openProject(id) {
+            const project = globalProjects.find(p => p.id === id);
+            if (!project) return;
             currentProjectId = id;
-            document.getElementById('detail-proj-name').innerText = name;
-            document.getElementById('detail-proj-desc').innerText = desc;
-            
+
+            document.getElementById('detail-proj-name').innerText = project.name;
+            document.getElementById('detail-proj-desc').innerText = project.description || '';
+
+            const statusEl = document.getElementById('detail-proj-status');
+            statusEl.textContent = project.status;
+            statusEl.className = `px-3 py-1 rounded-full text-sm font-semibold ${
+                project.status === 'Active' ? 'bg-green-100 text-green-800' :
+                project.status === 'On-Hold' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-gray-100 text-gray-700'}`;
+
+            // Billing Info tab
+            const customer = globalCustomers.find(c => c.id === project.customer_id);
+            const billingDiv = document.getElementById('project-customer-info');
+            if (customer) {
+                billingDiv.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Business</p><p class="font-semibold">${customer.business_name}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Contact Person</p><p>${customer.contact_person || '—'}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Email</p><p class="text-blue-600">${customer.email}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Billing Address</p><p>${customer.billing_address || '—'}</p></div>
+                    </div>`;
+            } else {
+                billingDiv.innerHTML = '<p class="text-gray-400 text-sm">No customer linked to this project.</p>';
+            }
+
+            // Reset to tasks tab
+            switchInnerTab('tasks', document.querySelector('#view-project-details .border-b button:first-child'));
+
             document.getElementById('view-projects').classList.add('hidden-view');
             document.getElementById('view-project-details').classList.remove('hidden-view');
-            
+
             loadTasks();
         }
 
@@ -490,42 +818,361 @@
             link.click();
         }
 
-        // Missing Employee logic added!
+        async function loadEmployees() {
+            globalEmployees = await apiCall('/employees') || [];
+            const tbody = document.getElementById('employees-table-body');
+            if (!globalEmployees.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-400">No team members yet.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = globalEmployees.map(e => {
+                const roleColor = e.role === 'Employee' ? 'bg-blue-100 text-blue-700' :
+                                  e.role === 'Contractor' ? 'bg-purple-100 text-purple-700' :
+                                  'bg-orange-100 text-orange-700';
+                const since = e.created_at ? new Date(e.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-4 font-medium">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                ${e.name.charAt(0).toUpperCase()}
+                            </div>
+                            ${e.name}
+                        </div>
+                    </td>
+                    <td class="p-4 text-blue-600">${e.email}</td>
+                    <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${roleColor}">${e.role}</span></td>
+                    <td class="p-4 text-gray-400 text-sm">${since}</td>
+                    <td class="p-4">
+                        <button onclick="deleteEmployee('${e.id}', '${e.name.replace(/'/g, "\\'")}')"
+                            class="text-gray-300 hover:text-red-500 transition" title="Delete member">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
         async function addEmployee() {
             const data = {
                 name: document.getElementById('emp-name').value,
                 email: document.getElementById('emp-email').value,
                 role: document.getElementById('emp-role').value
             };
-            
-            if(!data.name || !data.email) return alert("Name and Email are required");
-
-            if(await apiCall('/employees', 'POST', data)) {
+            if (!data.name || !data.email) return alert("Name and Email are required.");
+            if (await apiCall('/employees', 'POST', data)) {
                 document.getElementById('emp-name').value = '';
                 document.getElementById('emp-email').value = '';
                 document.getElementById('emp-role').value = 'Employee';
-                alert("Team member added successfully!");
+                loadEmployees();
+            }
+        }
+
+        async function deleteCustomer(id, name) {
+            if (!confirm(`Delete "${name}"?\n\nTheir linked projects will remain but will be unlinked. Invoice history will be permanently deleted.`)) return;
+            if (await apiCall(`/customers/${id}`, 'DELETE')) loadCustomers();
+        }
+
+        async function deleteProject(id, name) {
+            if (!confirm(`Delete project "${name}"?\n\nAll tasks, invoices, team assignments, and contracts for this project will be permanently deleted.`)) return;
+            if (await apiCall(`/projects/${id}`, 'DELETE')) {
+                switchView('projects');
+                loadProjects();
+            }
+        }
+
+        async function deleteEmployee(id, name) {
+            if (!confirm(`Delete "${name}" from the team?\n\nThey will be removed from all projects and their contracts will be deleted.`)) return;
+            if (await apiCall(`/employees/${id}`, 'DELETE')) loadEmployees();
+        }
+
+        // --- Project Members & Contracts ---
+        let contractEditorForEmployee = null;
+
+        function getSigningUrl(token) {
+            const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+            const base = isLocal
+                ? `${window.location.protocol}//${window.location.host}${window.location.pathname.replace(/\/[^/]*$/, '')}`
+                : 'https://fly-ai-solutions.github.io';
+            return `${base}/sign.html?token=${token}`;
+        }
+
+        async function loadProjectMembers() {
+            const members = await apiCall(`/projects/${currentProjectId}/members`) || [];
+            const listDiv = document.getElementById('project-team-list');
+            closeContractEditor();
+
+            if (!members.length) {
+                listDiv.innerHTML = '<p class="text-gray-400 text-sm py-2">No team members assigned yet. Use the dropdown above to add someone.</p>';
+            } else {
+                listDiv.innerHTML = members.map(m => {
+                    const roleColor = m.role === 'Employee' ? 'bg-blue-100 text-blue-700' :
+                                      m.role === 'Contractor' ? 'bg-purple-100 text-purple-700' :
+                                      'bg-orange-100 text-orange-700';
+                    let badge, action;
+                    if (!m.contract_id) {
+                        badge = '<span class="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">No Contract</span>';
+                        action = `<button onclick="openContractEditor('${m.employee_id}','${m.name.replace(/'/g,"\\'")}')" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Create Contract</button>`;
+                    } else if (m.contract_status === 'Pending') {
+                        badge = '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full font-semibold"><i class="fas fa-clock mr-1"></i>Awaiting Signature</span>';
+                        action = `<button onclick="openContractEditor('${m.employee_id}','${m.name.replace(/'/g,"\\'")}')" class="text-sm text-gray-500 hover:text-gray-700">Edit & Resend</button>`;
+                    } else {
+                        const d = new Date(m.signed_at).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+                        badge = `<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold"><i class="fas fa-check mr-1"></i>Signed ${d}</span>`;
+                        action = `<a href="${getSigningUrl(m.signing_token)}" target="_blank" class="text-sm text-blue-600 hover:underline font-medium">View / Print</a>`;
+                    }
+                    return `
+                    <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                            ${m.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-gray-800">${m.name}</p>
+                            <p class="text-xs text-gray-400">${m.email}</p>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded-full flex-shrink-0 ${roleColor}">${m.role}</span>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            ${badge}
+                            ${action}
+                            <button onclick="removeProjectMember('${m.employee_id}')" title="Remove from project"
+                                class="text-gray-300 hover:text-red-500 transition ml-1">
+                                <i class="fas fa-user-minus text-sm"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Populate add-member dropdown — exclude already-added members
+            const addedIds = new Set(members.map(m => m.employee_id));
+            const available = globalEmployees.filter(e => !addedIds.has(e.id));
+            const sel = document.getElementById('add-member-select');
+            sel.innerHTML = '<option value="">Add team member...</option>' +
+                available.map(e => `<option value="${e.id}">${e.name} (${e.role})</option>`).join('');
+        }
+
+        async function addProjectMember() {
+            const empId = document.getElementById('add-member-select').value;
+            if (!empId) return alert('Select a team member first.');
+            await apiCall(`/projects/${currentProjectId}/members`, 'POST', { employee_id: empId });
+            loadProjectMembers();
+        }
+
+        async function removeProjectMember(employeeId) {
+            if (!confirm('Remove this person from the project?')) return;
+            await apiCall(`/projects/${currentProjectId}/members/${employeeId}`, 'DELETE');
+            loadProjectMembers();
+        }
+
+        function openContractEditor(employeeId, employeeName) {
+            contractEditorForEmployee = employeeId;
+            document.getElementById('contract-for-name').textContent = employeeName;
+            document.getElementById('contract-send-status').textContent = '';
+
+            const project = globalProjects.find(p => p.id === currentProjectId);
+            const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+            const hasCustomNda = project?.nda_text && project.nda_text !== 'Standard Mutual Non-Disclosure Agreement...';
+
+            document.getElementById('contract-text-area').value = hasCustomNda
+                ? project.nda_text
+                : `CONTRACTOR / EMPLOYEE AGREEMENT
+
+This Agreement is entered into as of ${today}, between FLY AI Solutions ("Company") and ${employeeName} ("Contractor").
+
+PROJECT: ${project?.name || ''}
+
+1. SCOPE OF WORK
+The Contractor agrees to perform services as defined by the Company for the above-referenced project.
+
+2. CONFIDENTIALITY
+The Contractor agrees to keep all project information, client data, source code, and business processes strictly confidential during and after the engagement.
+
+3. INTELLECTUAL PROPERTY
+All work produced under this agreement is considered work-for-hire and remains the sole property of FLY AI Solutions.
+
+4. COMPENSATION
+Compensation terms will be agreed separately between both parties.
+
+5. TERM
+This agreement is effective from the date signed until the project is completed or terminated by either party with reasonable notice.
+
+6. NON-COMPETE
+The Contractor agrees not to directly solicit or engage with the Company's clients for competing services during and for 6 months after this project.
+
+By signing below, both parties agree to the terms outlined in this Agreement.
+
+FLY AI Solutions
+Date: ${today}`;
+
+            document.getElementById('contract-editor').classList.remove('hidden');
+            document.getElementById('contract-editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function closeContractEditor() {
+            contractEditorForEmployee = null;
+            document.getElementById('contract-editor').classList.add('hidden');
+        }
+
+        async function sendContract() {
+            const text = document.getElementById('contract-text-area').value.trim();
+            if (!text) return alert('Contract text cannot be empty.');
+
+            const btn = document.getElementById('send-contract-btn');
+            const status = document.getElementById('contract-send-status');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+
+            const res = await apiCall('/contracts', 'POST', {
+                project_id: currentProjectId,
+                employee_id: contractEditorForEmployee,
+                contract_text: text
+            });
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send for Signature';
+
+            if (res) {
+                status.className = 'text-sm ml-1 text-green-600 font-medium';
+                status.textContent = '✓ Sent — awaiting signature.';
+                setTimeout(() => { closeContractEditor(); loadProjectMembers(); }, 1800);
+            } else {
+                status.className = 'text-sm ml-1 text-red-600';
+                status.textContent = 'Failed to send.';
             }
         }
 
         // 4. Invoicing
+        let lineItems = [];
+
+        function switchInvTab(tab, el) {
+            document.getElementById('inv-create-panel').classList.toggle('hidden-view', tab !== 'create');
+            document.getElementById('inv-list-panel').classList.toggle('hidden-view', tab !== 'list');
+            document.querySelectorAll('[id^="inv-tab-"]').forEach(b => {
+                b.classList.remove('tab-active', 'text-gray-800');
+                b.classList.add('text-gray-500');
+            });
+            el.classList.add('tab-active');
+            el.classList.remove('text-gray-500');
+            if (tab === 'list') loadInvoicesList();
+        }
+
+        function addLineItem() {
+            lineItems.push({ desc: '', amount: '' });
+            renderLineItems();
+        }
+
+        function removeLineItem(idx) {
+            lineItems.splice(idx, 1);
+            renderLineItems();
+            recalcTotal();
+        }
+
+        function renderLineItems() {
+            const container = document.getElementById('line-items-container');
+            container.innerHTML = lineItems.map((item, idx) => `
+                <div class="grid grid-cols-[1fr_140px_32px] gap-2 items-center">
+                    <input type="text" value="${item.desc.replace(/"/g, '&quot;')}" placeholder="e.g., Milestone 1 Completion"
+                        class="border border-gray-300 rounded p-2 text-sm focus:ring-blue-500 outline-none"
+                        oninput="lineItems[${idx}].desc = this.value">
+                    <input type="number" value="${item.amount}" step="0.01" min="0" placeholder="0.00"
+                        class="border border-gray-300 rounded p-2 text-sm focus:ring-blue-500 outline-none"
+                        oninput="lineItems[${idx}].amount = this.value; recalcTotal()">
+                    <button type="button" onclick="removeLineItem(${idx})"
+                        class="text-gray-400 hover:text-red-500 transition flex items-center justify-center h-full">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function recalcTotal() {
+            const total = lineItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            document.getElementById('inv-total').textContent = `$${total.toFixed(2)}`;
+        }
+
         function populateInvoiceDropdowns() {
             const projSelect = document.getElementById('inv-project');
-            projSelect.innerHTML = '<option value="">Select Project...</option>' + 
+            projSelect.innerHTML = '<option value="">Select Project...</option>' +
                 globalProjects.map(p => `<option value="${p.id}" data-cust="${p.customer_id}">${p.name}</option>`).join('');
+            if (lineItems.length === 0) {
+                lineItems = [{ desc: '', amount: '' }];
+                renderLineItems();
+            }
+        }
+
+        async function loadInvoicesList() {
+            const container = document.getElementById('invoices-list-container');
+            container.innerHTML = '<p class="text-gray-400 text-sm">Loading...</p>';
+            const invoices = await apiCall('/invoices', 'GET');
+            if (!invoices || !invoices.length) {
+                container.innerHTML = '<p class="text-gray-400 text-sm py-4">No invoices found.</p>';
+                return;
+            }
+            const grouped = {};
+            invoices.forEach(inv => {
+                const key = inv.project_id;
+                if (!grouped[key]) grouped[key] = { name: inv.project_name || 'Unknown Project', items: [] };
+                grouped[key].items.push(inv);
+            });
+            container.innerHTML = Object.values(grouped).map(group => `
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                        <h3 class="font-semibold text-gray-800"><i class="fas fa-project-diagram mr-2 text-blue-500"></i>${group.name}</h3>
+                    </div>
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-gray-500 text-xs uppercase bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 border-b">Description</th>
+                                <th class="px-6 py-3 border-b">Amount</th>
+                                <th class="px-6 py-3 border-b">Date</th>
+                                <th class="px-6 py-3 border-b">Status</th>
+                                <th class="px-6 py-3 border-b">Link</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            ${group.items.map(inv => {
+                                const isPaid = inv.status === 'Paid';
+                                const badge = isPaid
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-yellow-100 text-yellow-700';
+                                const date = new Date(inv.issue_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                                return `<tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-3 max-w-xs truncate" title="${inv.description || ''}">${inv.description || '—'}</td>
+                                    <td class="px-6 py-3 font-semibold">$${parseFloat(inv.amount_usd).toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-gray-500">${date}</td>
+                                    <td class="px-6 py-3">
+                                        <span class="px-2 py-1 rounded-full text-xs font-bold ${badge}">${isPaid ? 'PAID' : 'UNPAID'}</span>
+                                    </td>
+                                    <td class="px-6 py-3">
+                                        ${inv.stripe_payment_link
+                                            ? `<a href="${inv.stripe_payment_link}" target="_blank" class="text-blue-600 hover:underline text-xs">View Link</a>`
+                                            : '<span class="text-gray-400 text-xs">—</span>'}
+                                    </td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `).join('');
         }
 
         document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitInvBtn');
             const statusDiv = document.getElementById('inv-status');
-            
+
             const projSelect = document.getElementById('inv-project');
             const projectId = projSelect.value;
             const custId = projSelect.options[projSelect.selectedIndex].getAttribute('data-cust');
             const customer = globalCustomers.find(c => c.id === custId);
 
-            if(!customer) return alert("Selected project has no associated customer data.");
+            if (!customer) return alert("Selected project has no associated customer data.");
+
+            const validItems = lineItems.filter(i => i.desc.trim() && parseFloat(i.amount) > 0);
+            if (!validItems.length) return alert("Please add at least one item with a description and amount.");
+
+            const totalAmount = validItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+            const combinedDesc = validItems.map(i => `${i.desc} ($${parseFloat(i.amount).toFixed(2)})`).join(' | ');
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
@@ -536,24 +1183,318 @@
                 customer_id: custId,
                 client_name: customer.contact_person || customer.business_name,
                 client_email: customer.email,
-                description: document.getElementById('inv-desc').value,
-                amount_usd: parseFloat(document.getElementById('inv-amount').value)
+                description: combinedDesc,
+                amount_usd: totalAmount
             };
 
             const res = await apiCall('/generate-invoice', 'POST', payload);
-            
+
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Generate & Email Stripe Link';
-            
-            if(res && res.link) {
+
+            if (res && res.link) {
                 statusDiv.className = "mt-4 p-4 rounded bg-green-50 text-green-800 border border-green-200 block";
-                statusDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> <b>Success!</b> Invoice emailed. <br><a href="${res.link}" target="_blank" class="text-blue-600 underline mt-2 inline-block">View Stripe Payment Link</a>`;
-                e.target.reset();
+                statusDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i> <b>Success!</b> Invoice created. <br><a href="${res.link}" target="_blank" class="text-blue-600 underline mt-2 inline-block">View Payment Link</a>`;
+                lineItems = [{ desc: '', amount: '' }];
+                renderLineItems();
+                recalcTotal();
+                projSelect.selectedIndex = 0;
             } else {
                 statusDiv.className = "mt-4 p-4 rounded bg-red-50 text-red-800 border border-red-200 block";
                 statusDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i> Error generating invoice.`;
             }
         });
+
+        // --- Multipart helper (for file uploads) ---
+        async function apiCallMultipart(endpoint, method = 'POST', formData = null) {
+            try {
+                const url = `${API_BASE}${endpoint}?token=${adminToken}`;
+                const options = { method };
+                if (formData) options.body = formData;
+                const res = await fetch(url, options);
+                if (res.status === 401) {
+                    alert("Session expired. Please log in again.");
+                    logout();
+                    return null;
+                }
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    throw new Error(msg);
+                }
+                return await res.json();
+            } catch (err) {
+                console.error("API Error:", err);
+                alert(err.message || "Could not connect to the backend.");
+                return null;
+            }
+        }
+
+        function escapeHtml(s) {
+            return (s == null ? '' : String(s))
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function fmtDate(s) { return s ? String(s).slice(0, 10) : '—'; }
+        function fmtBytes(n) {
+            if (!n && n !== 0) return '—';
+            if (n < 1024) return n + ' B';
+            if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+            return (n/(1024*1024)).toFixed(1) + ' MB';
+        }
+
+        // --- Helpers to populate project dropdowns ---
+        function populateProjectDropdown(selectId) {
+            const sel = document.getElementById(selectId);
+            const current = sel.value;
+            sel.innerHTML = '<option value="">— choose a project —</option>' +
+                globalProjects.map(p => `<option value="${p.id}"${p.id === current ? ' selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
+        }
+
+        // --- Contract Documents (top-level view) ---
+        async function initDocumentsView() {
+            if (!globalProjects.length) globalProjects = await apiCall('/projects') || [];
+            populateProjectDropdown('docs-project-select');
+            loadProjectDocuments();
+        }
+
+        async function loadProjectDocuments() {
+            const tbody = document.getElementById('documents-table-body');
+            const docs = await apiCall('/documents') || [];
+            if (!docs.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 text-sm">No documents uploaded yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = docs.map(d => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3 border-b text-sm text-gray-500">${escapeHtml(d.project_name || '—')}</td>
+                    <td class="p-3 border-b font-medium">${escapeHtml(d.name)}</td>
+                    <td class="p-3 border-b text-gray-600 text-sm">${escapeHtml(d.description || '—')}</td>
+                    <td class="p-3 border-b text-sm text-gray-500">
+                        ${escapeHtml(d.original_filename)}
+                        <span class="text-xs text-gray-400 block">${fmtBytes(d.file_size_bytes)}</span>
+                    </td>
+                    <td class="p-3 border-b text-sm text-gray-500">${fmtDate(d.uploaded_at)}</td>
+                    <td class="p-3 border-b text-center whitespace-nowrap">
+                        <a href="${API_BASE}/documents/${d.id}/download?token=${encodeURIComponent(adminToken)}"
+                           target="_blank" class="text-gray-500 hover:text-blue-600 mx-1" title="Download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        <button type="button" onclick="emailDocument('${d.id}', '${escapeHtml(d.name).replace(/'/g, "\\'")}')"
+                            class="text-gray-500 hover:text-blue-600 mx-1" title="Email document">
+                            <i class="fas fa-envelope"></i>
+                        </button>
+                        <button type="button" onclick="deleteDocument('${d.id}')"
+                            class="text-gray-300 hover:text-red-500 mx-1" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function addProjectDocument() {
+            const projectId = document.getElementById('docs-project-select').value;
+            if (!projectId) { alert('Please select a project first.'); return; }
+            const name = document.getElementById('doc-name').value.trim();
+            const description = document.getElementById('doc-description').value.trim();
+            const fileInput = document.getElementById('doc-file');
+            const statusEl = document.getElementById('doc-upload-status');
+            if (!name) { alert('Document name is required.'); return; }
+            if (!fileInput.files.length) { alert('Please choose a file.'); return; }
+            const fd = new FormData();
+            fd.append('name', name);
+            fd.append('description', description);
+            fd.append('file', fileInput.files[0]);
+            statusEl.textContent = 'Uploading...';
+            const res = await apiCallMultipart(`/projects/${projectId}/documents`, 'POST', fd);
+            if (res) {
+                statusEl.textContent = 'Uploaded.';
+                document.getElementById('doc-name').value = '';
+                document.getElementById('doc-description').value = '';
+                fileInput.value = '';
+                loadProjectDocuments();
+                setTimeout(() => statusEl.textContent = '', 2000);
+            } else {
+                statusEl.textContent = '';
+            }
+        }
+
+        async function emailDocument(docId, docName) {
+            const recipient = prompt(`Send "${docName}" to which email address?`);
+            if (!recipient) return;
+            const res = await apiCall(`/documents/${docId}/email`, 'POST', { recipient_email: recipient });
+            if (res) alert(res.message || 'Email sent.');
+        }
+
+        async function deleteDocument(docId) {
+            if (!confirm('Delete this document?')) return;
+            if (await apiCall(`/documents/${docId}`, 'DELETE')) loadProjectDocuments();
+        }
+
+        // --- Status (top-level view) ---
+        async function initStatusView() {
+            if (!globalProjects.length) globalProjects = await apiCall('/projects') || [];
+            populateProjectDropdown('status-project-select');
+            const dateInput = document.getElementById('status-date');
+            if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+            loadProjectStatuses();
+        }
+
+        async function loadProjectStatuses() {
+            const tbody = document.getElementById('statuses-table-body');
+            const items = await apiCall('/statuses') || [];
+            if (!items.length) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 text-sm">No status entries yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = items.map(s => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3 border-b text-sm text-gray-500">${escapeHtml(s.project_name || '—')}</td>
+                    <td class="p-3 border-b font-medium text-gray-700">${fmtDate(s.status_date)}</td>
+                    <td class="p-3 border-b text-gray-600 whitespace-pre-wrap">${escapeHtml(s.description)}</td>
+                    <td class="p-3 border-b text-center">
+                        <button type="button" onclick="deleteStatus('${s.id}')" class="text-gray-300 hover:text-red-500" title="Delete">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function addProjectStatus() {
+            const projectId = document.getElementById('status-project-select').value;
+            if (!projectId) { alert('Please select a project first.'); return; }
+            const status_date = document.getElementById('status-date').value;
+            const description = document.getElementById('status-description').value.trim();
+            if (!status_date) { alert('Status date is required.'); return; }
+            if (!description) { alert('Description is required.'); return; }
+            const res = await apiCall(`/projects/${projectId}/statuses`, 'POST', { status_date, description });
+            if (res) {
+                document.getElementById('status-description').value = '';
+                loadProjectStatuses();
+            }
+        }
+
+        async function deleteStatus(id) {
+            if (!confirm('Delete this status entry?')) return;
+            if (await apiCall(`/statuses/${id}`, 'DELETE')) loadProjectStatuses();
+        }
+
+        // --- Finance (top-level view) ---
+        function sigBadge(status) {
+            if (status === 'Signed')  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs"><i class="fas fa-check"></i> Signed</span>`;
+            if (status === 'Pending') return `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs"><i class="fas fa-hourglass-half"></i> Pending</span>`;
+            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">Not Signed</span>`;
+        }
+
+        async function initFinanceView() {
+            if (!globalProjects.length) globalProjects = await apiCall('/projects') || [];
+            populateProjectDropdown('finance-project-select');
+            const dateInput = document.getElementById('fin-date');
+            if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+            loadProjectFinance();
+        }
+
+        async function loadProjectFinance() {
+            const tbody = document.getElementById('finance-table-body');
+            const rows = await apiCall('/finance') || [];
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-gray-400 text-sm">No transactions yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = rows.map(r => {
+                const range = (r.service_start_date || r.service_end_date)
+                    ? `${fmtDate(r.service_start_date)} → ${fmtDate(r.service_end_date)}`
+                    : '—';
+                const fileCell = r.attachment_filename
+                    ? `<a href="${API_BASE}/finance/${r.id}/attachment?token=${encodeURIComponent(adminToken)}" target="_blank" class="text-blue-600 hover:underline" title="${escapeHtml(r.attachment_filename)}"><i class="fas fa-paperclip"></i></a>`
+                    : '<span class="text-gray-300">—</span>';
+                const amount = Number(r.amount).toFixed(2);
+                const drCr = r.direction === 'Credit'
+                    ? `<span class="text-green-700 font-semibold">CR</span>`
+                    : `<span class="text-red-700 font-semibold">DR</span>`;
+                return `
+                <tr class="hover:bg-gray-50 align-top">
+                    <td class="p-2 border-b text-gray-500">${escapeHtml(r.project_name || '—')}</td>
+                    <td class="p-2 border-b whitespace-nowrap">${fmtDate(r.transaction_date)}</td>
+                    <td class="p-2 border-b">${escapeHtml(r.paid_party)}</td>
+                    <td class="p-2 border-b text-center">${drCr}</td>
+                    <td class="p-2 border-b text-right whitespace-nowrap">$${amount}</td>
+                    <td class="p-2 border-b text-gray-600">${escapeHtml(r.services_description || '—')}</td>
+                    <td class="p-2 border-b text-xs text-gray-500 whitespace-nowrap">${range}</td>
+                    <td class="p-2 border-b text-center">${fileCell}</td>
+                    <td class="p-2 border-b text-center">${sigBadge(r.signature_status)}</td>
+                    <td class="p-2 border-b text-xs text-gray-500">${escapeHtml(r.signature_email || '—')}</td>
+                    <td class="p-2 border-b text-center whitespace-nowrap">
+                        <button type="button" onclick="sendFinanceSignature('${r.id}', '${escapeHtml(r.signature_email || '').replace(/'/g, "\\'")}')"
+                            class="text-gray-500 hover:text-blue-600 mx-1" title="Send for signature">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <button type="button" onclick="deleteFinanceRow('${r.id}')"
+                            class="text-gray-300 hover:text-red-500 mx-1" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function addFinanceRow() {
+            const projectId = document.getElementById('finance-project-select').value;
+            if (!projectId) { alert('Please select a project first.'); return; }
+            const transaction_date = document.getElementById('fin-date').value;
+            const paid_party = document.getElementById('fin-party').value.trim();
+            const direction = document.getElementById('fin-direction').value;
+            const amount = document.getElementById('fin-amount').value;
+            const services_description = document.getElementById('fin-services').value.trim();
+            const service_start_date = document.getElementById('fin-start').value;
+            const service_end_date = document.getElementById('fin-end').value;
+            const fileInput = document.getElementById('fin-file');
+            const statusEl = document.getElementById('fin-add-status');
+            if (!transaction_date) { alert('Transaction date is required.'); return; }
+            if (!paid_party) { alert('Paid By/To is required.'); return; }
+            if (!amount) { alert('Amount is required.'); return; }
+            const fd = new FormData();
+            fd.append('transaction_date', transaction_date);
+            fd.append('paid_party', paid_party);
+            fd.append('direction', direction);
+            fd.append('amount', amount);
+            if (services_description) fd.append('services_description', services_description);
+            if (service_start_date)   fd.append('service_start_date', service_start_date);
+            if (service_end_date)     fd.append('service_end_date', service_end_date);
+            if (fileInput.files.length) fd.append('file', fileInput.files[0]);
+            statusEl.textContent = 'Saving...';
+            const res = await apiCallMultipart(`/projects/${projectId}/finance`, 'POST', fd);
+            if (res) {
+                statusEl.textContent = 'Saved.';
+                document.getElementById('fin-party').value = '';
+                document.getElementById('fin-amount').value = '';
+                document.getElementById('fin-services').value = '';
+                document.getElementById('fin-start').value = '';
+                document.getElementById('fin-end').value = '';
+                fileInput.value = '';
+                loadProjectFinance();
+                setTimeout(() => statusEl.textContent = '', 2000);
+            } else {
+                statusEl.textContent = '';
+            }
+        }
+
+        async function sendFinanceSignature(rowId, defaultEmail) {
+            const recipient = prompt('Send signature request to which email address?', defaultEmail || '');
+            if (!recipient) return;
+            const res = await apiCall(`/finance/${rowId}/send-signature`, 'POST', { signature_email: recipient });
+            if (res) {
+                alert('Signature request sent.');
+                loadProjectFinance();
+            }
+        }
+
+        async function deleteFinanceRow(id) {
+            if (!confirm('Delete this transaction row?')) return;
+            if (await apiCall(`/finance/${id}`, 'DELETE')) loadProjectFinance();
+        }
 </script>
 </body>
 </html>
