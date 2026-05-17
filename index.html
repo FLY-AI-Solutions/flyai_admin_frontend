@@ -893,7 +893,7 @@
             const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const base = isLocal
                 ? `${window.location.protocol}//${window.location.host}${window.location.pathname.replace(/\/[^/]*$/, '')}`
-                : 'https://fly-ai-solutions.github.io';
+                : 'https://fly-ai-solutions.github.io/flyai_admin_frontend/';
             return `${base}/sign.html?token=${token}`;
         }
 
