@@ -659,6 +659,7 @@
         let currentProjectAudit = null;
         let currentProjectRepositories = { frontend: null, backend: null };
         let auditPollTimer = null;
+        let planPollTimers = {};
         let globalCustomers = [];
         let globalProjects = [];
         let globalEmployees = [];
@@ -1022,9 +1023,10 @@
                     <div class="text-xs mt-1 opacity-80">${escapeHtml(task.description || '')}</div>
                     <div class="text-xs mt-2 opacity-80">Priority: ${escapeHtml(task.priority || 'medium')} | Area: ${escapeHtml(task.repo_role || 'unknown')}</div>
                     ${(task.acceptance_criteria || []).length ? `<div class="text-xs mt-2 opacity-80">Acceptance: ${escapeHtml(task.acceptance_criteria.join(' | '))}</div>` : ''}
+                    ${task.implementation_plan_error ? `<div class="text-xs mt-2 text-red-700">${escapeHtml(task.implementation_plan_error)}</div>` : ''}
                     <div class="mt-3">
-                        <button type="button" onclick="generateImplementationPlan('${task.id}')" class="bg-rose-600 text-white px-3 py-2 rounded text-xs hover:bg-rose-700">
-                            Implementation Instructions Plan
+                        <button type="button" ${task.implementation_plan_status === 'queued' || task.implementation_plan_status === 'running' ? 'disabled' : ''} onclick="generateImplementationPlan('${task.id}')" class="bg-rose-600 disabled:bg-rose-300 text-white px-3 py-2 rounded text-xs hover:bg-rose-700">
+                            ${task.implementation_plan_status === 'completed' ? 'Download Implementation Plan' : task.implementation_plan_status === 'failed' ? 'Retry Implementation Plan' : task.implementation_plan_status === 'queued' || task.implementation_plan_status === 'running' ? 'Generating Plan...' : 'Implementation Instructions Plan'}
                         </button>
                     </div>
                 </div>
@@ -1099,10 +1101,34 @@
         }
 
         async function generateImplementationPlan(taskId) {
+            const task = (currentProjectAudit?.remaining_tasks || []).find(t => t.id === taskId);
+            if (task?.implementation_plan_status === 'completed' && task?.implementation_plan_available) {
+                window.open(`${API_BASE}/audit-tasks/${taskId}/implementation-plan/download?token=${encodeURIComponent(adminToken)}`, '_blank');
+                return;
+            }
             const res = await apiCall(`/audit-tasks/${taskId}/implementation-plan`, 'POST', {});
             if (!res) return;
-            window.open(`${API_BASE}/audit-tasks/${taskId}/implementation-plan/download?token=${encodeURIComponent(adminToken)}`, '_blank');
             await loadProjectAuditPanel();
+            pollImplementationPlan(taskId);
+        }
+
+        function pollImplementationPlan(taskId) {
+            if (planPollTimers[taskId]) clearTimeout(planPollTimers[taskId]);
+            planPollTimers[taskId] = setTimeout(async () => {
+                const task = await apiCall(`/audit-tasks/${taskId}`);
+                if (!task) return;
+                await loadProjectAuditPanel();
+                if (task.implementation_plan_status === 'completed' && task.implementation_plan_available) {
+                    delete planPollTimers[taskId];
+                    window.open(`${API_BASE}/audit-tasks/${taskId}/implementation-plan/download?token=${encodeURIComponent(adminToken)}`, '_blank');
+                    return;
+                }
+                if (task.implementation_plan_status === 'failed') {
+                    delete planPollTimers[taskId];
+                    return;
+                }
+                pollImplementationPlan(taskId);
+            }, 3000);
         }
 
         async function loadTasks() {
