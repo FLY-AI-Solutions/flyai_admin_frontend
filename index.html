@@ -125,6 +125,7 @@
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('team', this)">Team / NDAs</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('billing', this)">Billing Info</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('audit', this)">AI Audit</button>
+                        <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('marketing', this)">Marketing</button>
                     </div>
 
                     <div id="inner-tasks">
@@ -269,6 +270,78 @@
                                     <h4 class="font-semibold text-rose-800 mb-3">Remaining Tasks</h4>
                                     <div id="audit-remaining" class="space-y-3 text-sm text-rose-900"></div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="inner-marketing" class="hidden-view space-y-6">
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Marketing Brand Profile</h3>
+                                    <p class="text-sm text-gray-500">Use project-aware branding so AI can produce ready-to-adapt Facebook or LinkedIn content.</p>
+                                </div>
+                                <button type="button" onclick="saveMarketingProfile()" class="bg-slate-800 text-white px-4 py-2 rounded text-sm hover:bg-slate-700">Save Brand Profile</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Brand / Company Name</label>
+                                    <input type="text" id="marketing-brand-name" class="border p-2 rounded w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Logo URL</label>
+                                    <input type="url" id="marketing-logo-url" class="border p-2 rounded w-full" placeholder="https://.../logo.png">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Address</label>
+                                    <input type="text" id="marketing-address" class="border p-2 rounded w-full" placeholder="Company address">
+                                </div>
+                            </div>
+                            <div id="marketing-profile-status" class="text-sm text-gray-500 mt-3"></div>
+                        </div>
+
+                        <div class="bg-white border border-gray-200 rounded-lg p-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Generate Marketing Content</h3>
+                                    <p id="marketing-meta" class="text-sm text-gray-500">No marketing content generated yet.</p>
+                                </div>
+                                <button type="button" id="generate-marketing-btn" onclick="generateMarketingContent()" class="bg-orange-600 text-white px-4 py-2 rounded text-sm hover:bg-orange-700">
+                                    <i class="fas fa-bullhorn mr-2"></i>Generate Content
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Theme</label>
+                                    <input type="text" id="marketing-theme" class="border p-2 rounded w-full" placeholder="Bold product launch, calm premium, playful innovation...">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Platform</label>
+                                    <select id="marketing-platform" class="border p-2 rounded w-full bg-white">
+                                        <option value="linkedin">LinkedIn</option>
+                                        <option value="facebook">Facebook</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Asset Type</label>
+                                    <select id="marketing-asset-type" class="border p-2 rounded w-full bg-white">
+                                        <option value="linkedin_post">LinkedIn Post</option>
+                                        <option value="facebook_post">Facebook Post</option>
+                                        <option value="gif_video">GIF / Video Brief</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+                                <h4 class="font-semibold text-gray-800 mb-2">Generated Content</h4>
+                                <div id="marketing-output" class="text-sm text-gray-600">The AI will use the project objective, narrative, and brand profile to create context-aware marketing content here.</div>
+                            </div>
+
+                            <div class="flex gap-3 items-center">
+                                <button type="button" id="download-marketing-btn" onclick="downloadMarketingContent()" class="hidden bg-slate-800 text-white px-4 py-2 rounded text-sm hover:bg-slate-700">
+                                    Download Markdown Brief
+                                </button>
+                                <span id="marketing-download-hint" class="text-xs text-gray-500">Canva template links will appear in the generated result.</span>
                             </div>
                         </div>
                     </div>
@@ -657,8 +730,10 @@
         // --- DASHBOARD LOGIC ---
         let currentProjectId = null;
         let currentProjectAudit = null;
+        let currentMarketingGeneration = null;
         let currentProjectRepositories = { frontend: null, backend: null };
         let auditPollTimer = null;
+        let marketingPollTimer = null;
         let planPollTimers = {};
         let globalCustomers = [];
         let globalProjects = [];
@@ -668,6 +743,10 @@
             if (viewId !== 'project-details' && auditPollTimer) {
                 clearTimeout(auditPollTimer);
                 auditPollTimer = null;
+            }
+            if (viewId !== 'project-details' && marketingPollTimer) {
+                clearTimeout(marketingPollTimer);
+                marketingPollTimer = null;
             }
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-view'));
             document.getElementById(`view-${viewId}`).classList.remove('hidden-view');
@@ -689,7 +768,7 @@
         }
 
         function switchInnerTab(tabName, btnElement) {
-            ['tasks', 'team', 'billing', 'audit'].forEach(t => document.getElementById(`inner-${t}`).classList.add('hidden-view'));
+            ['tasks', 'team', 'billing', 'audit', 'marketing'].forEach(t => document.getElementById(`inner-${t}`).classList.add('hidden-view'));
             document.getElementById(`inner-${tabName}`).classList.remove('hidden-view');
 
             document.querySelectorAll('#view-project-details .border-b button').forEach(b => b.classList.remove('tab-active', 'text-gray-800'));
@@ -697,6 +776,7 @@
 
             if (tabName === 'team') loadProjectMembers();
             if (tabName === 'audit') loadProjectAuditPanel();
+            if (tabName === 'marketing') loadMarketingPanel();
         }
 
         function getProjectAiBadge(project) {
@@ -870,10 +950,15 @@
             if (!project) return;
             currentProjectId = id;
             currentProjectAudit = null;
+            currentMarketingGeneration = null;
             currentProjectRepositories = { frontend: null, backend: null };
             if (auditPollTimer) {
                 clearTimeout(auditPollTimer);
                 auditPollTimer = null;
+            }
+            if (marketingPollTimer) {
+                clearTimeout(marketingPollTimer);
+                marketingPollTimer = null;
             }
 
             applyProjectHeader(project);
@@ -901,6 +986,130 @@
 
             loadTasks();
             await loadProjectAuditPanel();
+        }
+
+        async function loadMarketingPanel() {
+            if (!currentProjectId) return;
+            const project = globalProjects.find(p => p.id === currentProjectId);
+            if (project) {
+                document.getElementById('marketing-brand-name').value = project.marketing_brand_name || 'FLY AI Solutions';
+                document.getElementById('marketing-logo-url').value = project.marketing_logo_url || '';
+                document.getElementById('marketing-address').value = project.marketing_address || '';
+            }
+
+            const latest = await apiCall(`/projects/${currentProjectId}/marketing/latest`);
+            if (latest && latest.status !== 'not_started') {
+                currentMarketingGeneration = latest;
+                renderMarketingGeneration(latest);
+                if (latest.status === 'queued' || latest.status === 'running') scheduleMarketingPoll();
+            } else {
+                currentMarketingGeneration = null;
+                renderMarketingGeneration(null);
+            }
+        }
+
+        async function saveMarketingProfile() {
+            if (!currentProjectId) return;
+            const statusEl = document.getElementById('marketing-profile-status');
+            statusEl.textContent = 'Saving...';
+            const payload = {
+                brand_name: document.getElementById('marketing-brand-name').value,
+                logo_url: document.getElementById('marketing-logo-url').value,
+                address: document.getElementById('marketing-address').value
+            };
+            const res = await apiCall(`/projects/${currentProjectId}/marketing-profile`, 'PUT', payload);
+            if (!res) {
+                statusEl.textContent = '';
+                return;
+            }
+            await loadProjects();
+            statusEl.textContent = 'Marketing brand profile saved.';
+            setTimeout(() => statusEl.textContent = '', 2200);
+        }
+
+        function renderMarketingGeneration(generation) {
+            const meta = document.getElementById('marketing-meta');
+            const output = document.getElementById('marketing-output');
+            const generateBtn = document.getElementById('generate-marketing-btn');
+            const downloadBtn = document.getElementById('download-marketing-btn');
+            if (!generation) {
+                meta.textContent = 'No marketing content generated yet.';
+                output.innerHTML = 'The AI will use the project objective, narrative, and brand profile to create context-aware marketing content here.';
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fas fa-bullhorn mr-2"></i>Generate Content';
+                downloadBtn.classList.add('hidden');
+                return;
+            }
+
+            meta.textContent = `Status: ${generation.status} | Theme: ${generation.theme || '—'} | Requested: ${formatTimestamp(generation.requested_at)} | Completed: ${formatTimestamp(generation.completed_at)}`;
+            if (generation.status === 'failed') {
+                output.innerHTML = `<span class="text-red-600">${escapeHtml(generation.error_message || 'Marketing generation failed.')}</span>`;
+            } else if (generation.status === 'queued' || generation.status === 'running') {
+                output.innerHTML = '<div class="text-gray-600"><i class="fas fa-spinner fa-spin mr-2"></i>Generating marketing content...</div>';
+            } else {
+                const c = generation.generated_content || {};
+                output.innerHTML = `
+                    <div class="space-y-3">
+                        <div><span class="font-semibold text-gray-800">Headline:</span> ${escapeHtml(c.headline || '—')}</div>
+                        <div><span class="font-semibold text-gray-800">Primary Text:</span><div class="whitespace-pre-wrap mt-1">${escapeHtml(c.primary_text || '')}</div></div>
+                        <div><span class="font-semibold text-gray-800">Caption:</span><div class="whitespace-pre-wrap mt-1">${escapeHtml(c.caption || '')}</div></div>
+                        <div><span class="font-semibold text-gray-800">CTA:</span> ${escapeHtml(c.cta || '—')}</div>
+                        <div><span class="font-semibold text-gray-800">Hashtags:</span> ${escapeHtml((c.hashtags || []).join(' '))}</div>
+                        <div><span class="font-semibold text-gray-800">Visual Brief:</span><div class="whitespace-pre-wrap mt-1">${escapeHtml(c.visual_brief || '')}</div></div>
+                        <div><span class="font-semibold text-gray-800">GIF / Video Brief:</span><div class="whitespace-pre-wrap mt-1">${escapeHtml(c.video_brief || '')}</div></div>
+                        <div><span class="font-semibold text-gray-800">Logo Placement:</span> ${escapeHtml(c.logo_placement || '—')}</div>
+                        <div><span class="font-semibold text-gray-800">Canva Templates:</span><div class="mt-1">${(c.canva_template_links || []).map(link => `<a href="${escapeHtml(link)}" target="_blank" class="text-blue-600 hover:underline block break-all">${escapeHtml(link)}</a>`).join('')}</div></div>
+                        <div><span class="font-semibold text-gray-800">Post Notes:</span><div class="whitespace-pre-wrap mt-1">${escapeHtml(c.post_notes || '')}</div></div>
+                    </div>
+                `;
+            }
+            const isRunning = generation.status === 'queued' || generation.status === 'running';
+            generateBtn.disabled = isRunning;
+            generateBtn.innerHTML = isRunning
+                ? '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...'
+                : '<i class="fas fa-bullhorn mr-2"></i>Generate Content';
+            if (generation.status === 'completed') {
+                downloadBtn.classList.remove('hidden');
+            } else {
+                downloadBtn.classList.add('hidden');
+            }
+        }
+
+        function scheduleMarketingPoll() {
+            if (marketingPollTimer) clearTimeout(marketingPollTimer);
+            marketingPollTimer = setTimeout(async () => {
+                if (!currentProjectId || !currentMarketingGeneration?.id) return;
+                const latest = await apiCall(`/projects/${currentProjectId}/marketing/${currentMarketingGeneration.id}`);
+                if (!latest) return;
+                currentMarketingGeneration = latest;
+                renderMarketingGeneration(latest);
+                if (latest.status === 'queued' || latest.status === 'running') {
+                    scheduleMarketingPoll();
+                }
+            }, 4000);
+        }
+
+        async function generateMarketingContent() {
+            if (!currentProjectId) return;
+            const theme = document.getElementById('marketing-theme').value.trim();
+            if (!theme) {
+                alert('Please add a theme for the campaign.');
+                return;
+            }
+            const res = await apiCall(`/projects/${currentProjectId}/marketing/generate`, 'POST', {
+                theme,
+                platform: document.getElementById('marketing-platform').value,
+                asset_type: document.getElementById('marketing-asset-type').value
+            });
+            if (!res) return;
+            currentMarketingGeneration = res;
+            renderMarketingGeneration(res);
+            scheduleMarketingPoll();
+        }
+
+        function downloadMarketingContent() {
+            if (!currentProjectId || !currentMarketingGeneration?.id || currentMarketingGeneration.status !== 'completed') return;
+            window.open(`${API_BASE}/projects/${currentProjectId}/marketing/${currentMarketingGeneration.id}/download?token=${encodeURIComponent(adminToken)}`, '_blank');
         }
 
         async function loadProjectAuditPanel() {
