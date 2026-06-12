@@ -1265,19 +1265,25 @@
         function renderTaskImplementButtons(task) {
             const state = getTaskImplementationState(task);
             const s = state.status;
-            const inFlight = (s === 'branching' || s === 'coding' || s === 'pushing' || s === 'queued');
+            const inFlight = (s === 'branching' || s === 'coding' || s === 'pushing' || s === 'queued' || s === 'merging');
 
             let implementBtn;
+            let mergeBtn = '';
             if (state.fromBulk) {
-                // Per-task action while task is part of a bulk run: show the bulk status as disabled label.
-                if (s === 'pushed') {
+                // Per-task button while task belongs to a bulk run. Merge happens on the bulk card.
+                if (s === 'merged') {
+                    implementBtn = state.pr_url
+                        ? `<button type="button" onclick="window.open('${escapeHtml(state.pr_url)}', '_blank')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>View PR</button>`
+                        : `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-check mr-1"></i>Bulk merged</button>`;
+                } else if (s === 'pushed') {
                     if (state.pr_url) {
                         implementBtn = `<button type="button" onclick="window.open('${escapeHtml(state.pr_url)}', '_blank')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>View PR</button>`;
                     } else {
                         implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed">Bulk pushed</button>`;
                     }
                 } else if (inFlight) {
-                    implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-spinner fa-spin mr-1"></i>Bulk implementing… (${escapeHtml(s)})</button>`;
+                    const lbl = (s === 'merging') ? 'Bulk merging…' : `Bulk implementing… (${escapeHtml(s)})`;
+                    implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-spinner fa-spin mr-1"></i>${lbl}</button>`;
                 } else if (s === 'failed') {
                     implementBtn = `<button type="button" disabled title="${escapeHtml(state.error || 'Bulk run failed.')}" class="bg-red-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed">Bulk failed</button>`;
                 } else {
@@ -1287,10 +1293,17 @@
                 if (s === 'not_started' || !s) {
                     implementBtn = `<button type="button" onclick="createBranchAndImplement('${task.id}')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>Create branch & implement</button>`;
                 } else if (inFlight) {
-                    implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-spinner fa-spin mr-1"></i>Implementing… (${escapeHtml(s)})</button>`;
+                    const lbl = (s === 'merging') ? 'Merging…' : `Implementing… (${escapeHtml(s)})`;
+                    implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-spinner fa-spin mr-1"></i>${lbl}</button>`;
+                } else if (s === 'merged') {
+                    implementBtn = state.pr_url
+                        ? `<button type="button" onclick="window.open('${escapeHtml(state.pr_url)}', '_blank')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>View PR</button>`
+                        : `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed">Merged</button>`;
+                    mergeBtn = `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-check mr-1"></i>Merged ✓</button>`;
                 } else if (s === 'pushed') {
                     if (state.pr_url) {
                         implementBtn = `<button type="button" onclick="window.open('${escapeHtml(state.pr_url)}', '_blank')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>View PR</button>`;
+                        mergeBtn = `<button type="button" onclick="mergeTaskToMain('${task.id}')" class="bg-emerald-600 text-white px-3 py-2 rounded text-xs hover:bg-emerald-700"><i class="fas fa-code-merge mr-1"></i>Merge to Main</button>`;
                     } else {
                         implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed">Pushed</button>`;
                     }
@@ -1302,10 +1315,10 @@
             }
 
             let playBtn = '';
-            if (s === 'pushed') {
+            if (s === 'pushed' || s === 'merged') {
                 if (state.preview_url) {
                     playBtn = `<button type="button" onclick="window.open('${escapeHtml(state.preview_url)}', '_blank')" class="bg-green-600 text-white px-3 py-2 rounded text-xs hover:bg-green-700"><i class="fas fa-play mr-1"></i>Play</button>`;
-                } else {
+                } else if (s === 'pushed') {
                     playBtn = `<button type="button" onclick="playPreview('${task.id}')" title="click to refresh" class="bg-green-300 text-white px-3 py-2 rounded text-xs cursor-pointer hover:bg-green-400"><i class="fas fa-spinner fa-spin mr-1"></i>Detecting deployment…</button>`;
                 }
             }
@@ -1314,7 +1327,7 @@
                 ? `<div class="text-xs mt-2 text-red-700">${escapeHtml(state.error)}</div>`
                 : '';
 
-            return { implementBtn, playBtn, errBlock };
+            return { implementBtn, mergeBtn, playBtn, errBlock };
         }
 
         function renderBulkImplementations(implementations) {
@@ -1326,12 +1339,21 @@
             }
             container.innerHTML = implementations.map(imp => {
                 const s = imp.status || 'queued';
-                const inFlight = (s === 'queued' || s === 'branching' || s === 'coding' || s === 'pushing');
+                const inFlight = (s === 'queued' || s === 'branching' || s === 'coding' || s === 'pushing' || s === 'merging');
                 let badgeColor = 'bg-gray-100 text-gray-700';
-                if (s === 'pushed') badgeColor = 'bg-green-100 text-green-700';
+                if (s === 'merged') badgeColor = 'bg-emerald-100 text-emerald-700';
+                else if (s === 'pushed') badgeColor = 'bg-green-100 text-green-700';
                 else if (s === 'failed') badgeColor = 'bg-red-100 text-red-700';
                 else if (inFlight) badgeColor = 'bg-blue-100 text-blue-700';
                 const prLink = imp.pr_url ? `<a href="${escapeHtml(imp.pr_url)}" target="_blank" class="text-blue-600 hover:underline text-xs">View PR</a>` : '';
+                let mergeBtn = '';
+                if (s === 'pushed' && imp.pr_url) {
+                    mergeBtn = `<button type="button" onclick="mergeBulkToMain('${imp.id}')" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs hover:bg-emerald-700"><i class="fas fa-code-merge mr-1"></i>Merge to Main</button>`;
+                } else if (s === 'merging') {
+                    mergeBtn = `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-1 rounded text-xs cursor-not-allowed"><i class="fas fa-spinner fa-spin mr-1"></i>Merging…</button>`;
+                } else if (s === 'merged') {
+                    mergeBtn = `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-1 rounded text-xs cursor-not-allowed"><i class="fas fa-check mr-1"></i>Merged ✓</button>`;
+                }
                 const playBtn = imp.preview_url
                     ? `<button type="button" onclick="window.open('${escapeHtml(imp.preview_url)}', '_blank')" class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"><i class="fas fa-play mr-1"></i>Play</button>`
                     : '';
@@ -1344,6 +1366,7 @@
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full ${badgeColor}">${escapeHtml(s)}${inFlight ? ' <i class="fas fa-spinner fa-spin ml-1"></i>' : ''}</span>
                                 ${prLink}
+                                ${mergeBtn}
                                 ${playBtn}
                             </div>
                         </div>
@@ -1371,6 +1394,7 @@
                             ${task.implementation_plan_status === 'completed' ? 'Download Implementation Plan' : task.implementation_plan_status === 'failed' ? 'Retry Implementation Plan' : task.implementation_plan_status === 'queued' || task.implementation_plan_status === 'running' ? 'Generating Plan...' : 'Implementation Instructions Plan'}
                         </button>
                         ${buttons.implementBtn}
+                        ${buttons.mergeBtn}
                         ${buttons.playBtn}
                     </div>
                 </div>
@@ -1536,6 +1560,60 @@
             }
         }
 
+        async function mergeTaskToMain(taskId) {
+            if (!confirm("Merge this task's PR into the default branch? The PR will be marked ready for review (if draft) and merged via squash.")) return;
+            try {
+                const res = await fetch(`${API_BASE}/audit-tasks/${taskId}/merge?token=${adminToken}`, {
+                    method: 'POST',
+                    body: new FormData()
+                });
+                if (res.status === 409) {
+                    let detail = 'Cannot merge right now.';
+                    try { detail = (await res.json()).detail || detail; } catch {}
+                    alert(detail);
+                    return;
+                }
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    alert(msg);
+                    return;
+                }
+                await loadProjectAuditPanel();
+                pollAuditUntilSettled();
+            } catch (err) {
+                console.error('mergeTaskToMain error:', err);
+                alert('Failed to start merge.');
+            }
+        }
+
+        async function mergeBulkToMain(implId) {
+            if (!confirm("Merge this bulk PR into the default branch? The PR will be marked ready for review (if draft) and merged via squash.")) return;
+            try {
+                const res = await fetch(`${API_BASE}/audit-implementations/${implId}/merge?token=${adminToken}`, {
+                    method: 'POST',
+                    body: new FormData()
+                });
+                if (res.status === 409) {
+                    let detail = 'Cannot merge right now.';
+                    try { detail = (await res.json()).detail || detail; } catch {}
+                    alert(detail);
+                    return;
+                }
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    alert(msg);
+                    return;
+                }
+                await loadProjectAuditPanel();
+                pollAuditUntilSettled();
+            } catch (err) {
+                console.error('mergeBulkToMain error:', err);
+                alert('Failed to start merge.');
+            }
+        }
+
         async function implementAllRemaining() {
             if (!currentProjectId || !currentProjectAudit?.id) {
                 alert('No audit available to implement.');
@@ -1594,8 +1672,8 @@
                 }
                 const tasks = (latestAudit?.remaining_tasks) || [];
                 const implementations = (latestAudit?.implementations) || [];
-                const taskTerminalSet = new Set(['pushed', 'failed', 'not_started']);
-                const implTerminalSet = new Set(['pushed', 'failed']);
+                const taskTerminalSet = new Set(['pushed', 'merged', 'failed', 'not_started']);
+                const implTerminalSet = new Set(['pushed', 'merged', 'failed']);
                 const allTasksSettled = tasks.every(t => {
                     const state = getTaskImplementationState(t);
                     return taskTerminalSet.has(state.status || 'not_started');
