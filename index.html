@@ -58,9 +58,6 @@
                 <button onclick="switchView('documents')" id="nav-documents" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
                     <i class="fas fa-file-contract w-5"></i> Contract Documents
                 </button>
-                <button onclick="switchView('status')" id="nav-status" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
-                    <i class="fas fa-tasks w-5"></i> Status
-                </button>
                 <button onclick="switchView('finance')" id="nav-finance" class="w-full flex items-center gap-3 text-left p-3 rounded-lg hover:bg-slate-800 transition text-slate-300 hover:text-white">
                     <i class="fas fa-dollar-sign w-5"></i> Finance
                 </button>
@@ -117,7 +114,12 @@
                             <h2 id="detail-proj-name" class="text-3xl font-bold text-gray-800 mb-2">Project Name</h2>
                             <p id="detail-proj-desc" class="text-gray-500">Project description goes here.</p>
                         </div>
-                        <span id="detail-proj-status" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Active</span>
+                        <div class="flex items-center gap-3">
+                            <button type="button" id="launch-project-btn" onclick="launchProjectFrontend()" class="hidden bg-green-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-green-700">
+                                <i class="fas fa-rocket mr-1"></i> Launch
+                            </button>
+                            <span id="detail-proj-status" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Active</span>
+                        </div>
                     </div>
 
                     <div class="flex space-x-6 border-b border-gray-200 mb-6 flex-wrap">
@@ -126,6 +128,7 @@
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('billing', this)">Billing Info</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('audit', this)">AI Audit</button>
                         <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('marketing', this)">Marketing</button>
+                        <button class="pb-2 text-gray-500 hover:text-gray-800" onclick="switchInnerTab('status', this)">Status</button>
                     </div>
 
                     <div id="inner-tasks">
@@ -236,6 +239,16 @@
                                     <input type="url" id="detail-backend-repo" class="border p-2 rounded w-full">
                                 </div>
                             </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Frontend URL <span class="text-gray-400">(deployed site, used by Launch)</span></label>
+                                    <input type="url" id="detail-frontend-url" class="border p-2 rounded w-full" placeholder="https://example.com">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">API Base Path <span class="text-gray-400">(where the frontend calls the backend)</span></label>
+                                    <input type="url" id="detail-api-base-url" class="border p-2 rounded w-full" placeholder="https://api.example.com">
+                                </div>
+                            </div>
                             <div id="project-overview-save-status" class="text-sm text-gray-500 mt-3"></div>
                         </div>
 
@@ -245,11 +258,17 @@
                                     <h3 class="text-lg font-semibold text-gray-800">Latest AI Audit</h3>
                                     <p id="audit-meta" class="text-sm text-gray-500">No audit run yet.</p>
                                 </div>
-                                <button type="button" id="run-audit-btn" onclick="runProjectAudit()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
-                                    <i class="fas fa-wand-magic-sparkles mr-2"></i>Run AI Audit
-                                </button>
+                                <div class="flex gap-2 flex-wrap">
+                                    <button type="button" id="run-audit-btn" onclick="runProjectAudit()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+                                        <i class="fas fa-wand-magic-sparkles mr-2"></i>Run AI Audit
+                                    </button>
+                                    <button type="button" id="implement-all-btn" onclick="implementAllRemaining()" disabled class="bg-emerald-600 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded text-sm hover:bg-emerald-700">
+                                        <i class="fas fa-rocket mr-2"></i>Implement all remaining
+                                    </button>
+                                </div>
                             </div>
 
+                            <div id="audit-bulk-implementations" class="space-y-3 mb-5"></div>
                             <div id="repo-link-summary" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5"></div>
 
                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-5">
@@ -346,6 +365,42 @@
                         </div>
                     </div>
 
+                    <div id="inner-status" class="hidden-view space-y-6">
+                        <div class="bg-white border border-gray-200 rounded-lg p-5">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Add Status Entry</h3>
+                            <div class="flex gap-3 items-start flex-wrap">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Date</label>
+                                    <input type="date" id="status-entry-date" required class="border p-2 rounded text-sm">
+                                </div>
+                                <div class="flex-1 min-w-[260px]">
+                                    <label class="block text-xs text-gray-500 mb-1">Description</label>
+                                    <textarea id="status-entry-desc" required placeholder="What changed?" rows="2" class="border p-2 rounded text-sm w-full"></textarea>
+                                </div>
+                                <div class="pt-5">
+                                    <button type="button" onclick="addProjectStatus()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
+                                        <i class="fas fa-plus mr-1"></i>Save Entry
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-gray-50 text-gray-600 text-sm">
+                                            <th class="p-3 border-b w-40">Date</th>
+                                            <th class="p-3 border-b">Description</th>
+                                            <th class="p-3 border-b w-20 text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="status-entries-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </section>
 
@@ -393,56 +448,6 @@
                                 </tr>
                             </thead>
                             <tbody id="documents-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ===== STATUS ===== -->
-            <section id="view-status" class="view-section hidden-view">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6">Project Status</h2>
-
-                <!-- Project selector -->
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex items-center gap-4">
-                    <label class="text-sm font-medium text-gray-600 whitespace-nowrap">Select Project:</label>
-                    <select id="status-project-select" class="border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 flex-1 max-w-xs">
-                        <option value="">— choose a project —</option>
-                    </select>
-                </div>
-
-                <!-- Add status form -->
-                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-                    <h3 class="text-lg font-semibold mb-4">Add Status Entry</h3>
-                    <div class="flex gap-3 items-start flex-wrap">
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Date</label>
-                            <input type="date" id="status-date" class="border p-2 rounded text-sm">
-                        </div>
-                        <div class="flex-1 min-w-[260px]">
-                            <label class="block text-xs text-gray-500 mb-1">Description</label>
-                            <textarea id="status-description" placeholder="Status description..." rows="2" class="border p-2 rounded text-sm w-full"></textarea>
-                        </div>
-                        <div class="pt-5">
-                            <button type="button" onclick="addProjectStatus()" class="bg-slate-800 text-white px-3 py-2 rounded text-sm hover:bg-slate-700">
-                                <i class="fas fa-plus mr-1"></i>Add Status
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Status table -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50 text-gray-600 text-sm">
-                                    <th class="p-3 border-b">Project</th>
-                                    <th class="p-3 border-b w-40">Date</th>
-                                    <th class="p-3 border-b">Description</th>
-                                    <th class="p-3 border-b w-20 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="statuses-table-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -735,6 +740,8 @@
         let auditPollTimer = null;
         let marketingPollTimer = null;
         let planPollTimers = {};
+        let planPollStartedAt = {};
+        const PLAN_POLL_CAP_MS = 5 * 60 * 1000;
         let globalCustomers = [];
         let globalProjects = [];
         let globalEmployees = [];
@@ -763,12 +770,11 @@
             if (viewId === 'employees')  loadEmployees();
             if (viewId === 'invoices')   populateInvoiceDropdowns();
             if (viewId === 'documents')  initDocumentsView();
-            if (viewId === 'status')     initStatusView();
             if (viewId === 'finance')    initFinanceView();
         }
 
         function switchInnerTab(tabName, btnElement) {
-            ['tasks', 'team', 'billing', 'audit', 'marketing'].forEach(t => document.getElementById(`inner-${t}`).classList.add('hidden-view'));
+            ['tasks', 'team', 'billing', 'audit', 'marketing', 'status'].forEach(t => document.getElementById(`inner-${t}`).classList.add('hidden-view'));
             document.getElementById(`inner-${tabName}`).classList.remove('hidden-view');
 
             document.querySelectorAll('#view-project-details .border-b button').forEach(b => b.classList.remove('tab-active', 'text-gray-800'));
@@ -777,6 +783,11 @@
             if (tabName === 'team') loadProjectMembers();
             if (tabName === 'audit') loadProjectAuditPanel();
             if (tabName === 'marketing') loadMarketingPanel();
+            if (tabName === 'status') {
+                const dateInput = document.getElementById('status-entry-date');
+                if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+                if (currentProjectId) loadProjectStatuses(currentProjectId);
+            }
         }
 
         function getProjectAiBadge(project) {
@@ -810,6 +821,21 @@
                 project.status === 'Active' ? 'bg-green-100 text-green-800' :
                 project.status === 'On-Hold' ? 'bg-yellow-100 text-yellow-800' :
                 'bg-gray-100 text-gray-700'}`;
+
+            const launchBtn = document.getElementById('launch-project-btn');
+            const frontendUrl = (project.frontend_url || '').trim();
+            if (frontendUrl) {
+                launchBtn.dataset.url = frontendUrl;
+                launchBtn.classList.remove('hidden');
+            } else {
+                launchBtn.dataset.url = '';
+                launchBtn.classList.add('hidden');
+            }
+        }
+
+        function launchProjectFrontend() {
+            const url = document.getElementById('launch-project-btn').dataset.url;
+            if (url) window.open(url, '_blank', 'noopener');
         }
 
         // --- THE MAGIC SIMPLE REQUEST FUNCTION ---
@@ -985,6 +1011,7 @@
             document.getElementById('view-project-details').classList.remove('hidden-view');
 
             loadTasks();
+            loadProjectStatuses(currentProjectId);
             await loadProjectAuditPanel();
         }
 
@@ -1112,6 +1139,16 @@
             window.open(`${API_BASE}/projects/${currentProjectId}/marketing/${currentMarketingGeneration.id}/download?token=${encodeURIComponent(adminToken)}`, '_blank');
         }
 
+        async function quietFetchJson(endpoint) {
+            try {
+                const res = await fetch(`${API_BASE}${endpoint}?token=${adminToken}`);
+                if (!res.ok) return undefined;
+                return await res.json();
+            } catch {
+                return undefined;
+            }
+        }
+
         async function loadProjectAuditPanel() {
             if (!currentProjectId) return;
             const project = globalProjects.find(p => p.id === currentProjectId);
@@ -1121,15 +1158,24 @@
                 document.getElementById('detail-edit-objective').value = project.objective || '';
                 document.getElementById('detail-edit-narrative').value = project.narrative || '';
                 document.getElementById('detail-edit-status').value = project.status || 'Active';
+                document.getElementById('detail-frontend-url').value = project.frontend_url || '';
+                document.getElementById('detail-api-base-url').value = project.api_base_url || '';
             }
 
-            currentProjectRepositories = await apiCall(`/projects/${currentProjectId}/repositories`) || { frontend: null, backend: null };
-            document.getElementById('detail-frontend-repo').value = currentProjectRepositories.frontend?.github_url || '';
-            document.getElementById('detail-backend-repo').value = currentProjectRepositories.backend?.github_url || '';
-            renderRepoLinkSummary();
+            const repos = await quietFetchJson(`/projects/${currentProjectId}/repositories`);
+            if (repos !== undefined) {
+                currentProjectRepositories = repos || { frontend: null, backend: null };
+                document.getElementById('detail-frontend-repo').value = currentProjectRepositories.frontend?.github_url || '';
+                document.getElementById('detail-backend-repo').value = currentProjectRepositories.backend?.github_url || '';
+                renderRepoLinkSummary();
+            }
 
-            const latestAudit = await apiCall(`/projects/${currentProjectId}/ai-audits/latest`);
-            if (latestAudit && latestAudit.status !== 'not_started') {
+            const latestAudit = await quietFetchJson(`/projects/${currentProjectId}/ai-audits/latest`);
+            if (latestAudit === undefined) {
+                // Transient fetch failure — preserve whatever the user is currently seeing.
+                return;
+            }
+            if (latestAudit && latestAudit.status && latestAudit.status !== 'not_started') {
                 currentProjectAudit = latestAudit;
                 renderAudit(latestAudit);
                 if (latestAudit.status === 'queued' || latestAudit.status === 'running') scheduleAuditPoll();
@@ -1174,7 +1220,9 @@
                 description: document.getElementById('detail-edit-description').value,
                 objective: document.getElementById('detail-edit-objective').value,
                 narrative: document.getElementById('detail-edit-narrative').value,
-                status: document.getElementById('detail-edit-status').value
+                status: document.getElementById('detail-edit-status').value,
+                frontend_url: document.getElementById('detail-frontend-url').value,
+                api_base_url: document.getElementById('detail-api-base-url').value
             };
             const projectRes = await apiCall(`/projects/${currentProjectId}`, 'PUT', payload);
             if (!projectRes) {
@@ -1224,22 +1272,168 @@
             `).join('');
         }
 
+        function getTaskImplementationState(task) {
+            // If the task belongs to a bulk run, read status from the bulk row.
+            const bulkId = task.bulk_implementation_id;
+            if (bulkId && currentProjectAudit && Array.isArray(currentProjectAudit.implementations)) {
+                const bulk = currentProjectAudit.implementations.find(i => i.id === bulkId);
+                if (bulk) {
+                    return {
+                        status: bulk.status || 'not_started',
+                        pr_url: bulk.pr_url || null,
+                        preview_url: bulk.preview_url || null,
+                        error: bulk.error_message || null,
+                        fromBulk: true
+                    };
+                }
+            }
+            return {
+                status: task.implementation_branch_status || 'not_started',
+                pr_url: task.implementation_pr_url || null,
+                preview_url: task.implementation_preview_url || null,
+                error: task.implementation_error || null,
+                fromBulk: false
+            };
+        }
+
+        function renderTaskImplementButtons(task) {
+            const state = getTaskImplementationState(task);
+            const s = state.status;
+            const inFlight = (s === 'branching' || s === 'coding' || s === 'pushing' || s === 'queued' || s === 'merging');
+
+            let implementBtn;
+            let mergeBtn = '';
+            if (state.fromBulk) {
+                // Per-task button while task belongs to a bulk run. Merge happens on the bulk card.
+                if (s === 'merged') {
+                    implementBtn = state.pr_url
+                        ? `<button type="button" onclick="window.open('${escapeHtml(state.pr_url)}', '_blank')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>View PR</button>`
+                        : `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-check mr-1"></i>Bulk merged</button>`;
+                } else if (s === 'pushed') {
+                    if (state.pr_url) {
+                        implementBtn = `<button type="button" onclick="window.open('${escapeHtml(state.pr_url)}', '_blank')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>View PR</button>`;
+                    } else {
+                        implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed">Bulk pushed</button>`;
+                    }
+                } else if (inFlight) {
+                    const lbl = (s === 'merging') ? 'Bulk merging…' : `Bulk implementing… (${escapeHtml(s)})`;
+                    implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-spinner fa-spin mr-1"></i>${lbl}</button>`;
+                } else if (s === 'failed') {
+                    implementBtn = `<button type="button" disabled title="${escapeHtml(state.error || 'Bulk run failed.')}" class="bg-red-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed">Bulk failed</button>`;
+                } else {
+                    implementBtn = `<button type="button" disabled class="bg-gray-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed">In bulk run</button>`;
+                }
+            } else {
+                if (s === 'not_started' || !s) {
+                    implementBtn = `<button type="button" onclick="createBranchAndImplement('${task.id}')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>Create branch & implement</button>`;
+                } else if (inFlight) {
+                    const lbl = (s === 'merging') ? 'Merging…' : `Implementing… (${escapeHtml(s)})`;
+                    implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-spinner fa-spin mr-1"></i>${lbl}</button>`;
+                } else if (s === 'merged') {
+                    implementBtn = state.pr_url
+                        ? `<button type="button" onclick="window.open('${escapeHtml(state.pr_url)}', '_blank')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>View PR</button>`
+                        : `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed">Merged</button>`;
+                    mergeBtn = `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed"><i class="fas fa-check mr-1"></i>Merged ✓</button>`;
+                } else if (s === 'pushed') {
+                    if (state.pr_url) {
+                        implementBtn = `<button type="button" onclick="window.open('${escapeHtml(state.pr_url)}', '_blank')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>View PR</button>`;
+                        mergeBtn = `<button type="button" onclick="mergeTaskToMain('${task.id}')" class="bg-emerald-600 text-white px-3 py-2 rounded text-xs hover:bg-emerald-700"><i class="fas fa-code-merge mr-1"></i>Merge to Main</button>`;
+                    } else {
+                        implementBtn = `<button type="button" disabled class="bg-indigo-300 text-white px-3 py-2 rounded text-xs cursor-not-allowed">Pushed</button>`;
+                    }
+                } else if (s === 'failed') {
+                    implementBtn = `<button type="button" onclick="createBranchAndImplement('${task.id}')" title="${escapeHtml(state.error || 'Implementation failed.')}" class="bg-red-600 text-white px-3 py-2 rounded text-xs hover:bg-red-700"><i class="fas fa-rotate-right mr-1"></i>Retry implement</button>`;
+                } else {
+                    implementBtn = `<button type="button" onclick="createBranchAndImplement('${task.id}')" class="bg-indigo-600 text-white px-3 py-2 rounded text-xs hover:bg-indigo-700"><i class="fas fa-code-branch mr-1"></i>Create branch & implement</button>`;
+                }
+            }
+
+            let playBtn = '';
+            if (s === 'pushed' || s === 'merged') {
+                if (state.preview_url) {
+                    playBtn = `<button type="button" onclick="window.open('${escapeHtml(state.preview_url)}', '_blank')" class="bg-green-600 text-white px-3 py-2 rounded text-xs hover:bg-green-700"><i class="fas fa-play mr-1"></i>Play</button>`;
+                } else if (s === 'pushed') {
+                    playBtn = `<button type="button" onclick="playPreview('${task.id}')" title="click to refresh" class="bg-green-300 text-white px-3 py-2 rounded text-xs cursor-pointer hover:bg-green-400"><i class="fas fa-spinner fa-spin mr-1"></i>Detecting deployment…</button>`;
+                }
+            }
+
+            const errBlock = (s === 'failed' && state.error)
+                ? `<div class="text-xs mt-2 text-red-700">${escapeHtml(state.error)}</div>`
+                : '';
+
+            return { implementBtn, mergeBtn, playBtn, errBlock };
+        }
+
+        function renderBulkImplementations(implementations) {
+            const container = document.getElementById('audit-bulk-implementations');
+            if (!container) return;
+            if (!Array.isArray(implementations) || !implementations.length) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = implementations.map(imp => {
+                const s = imp.status || 'queued';
+                const inFlight = (s === 'queued' || s === 'branching' || s === 'coding' || s === 'pushing' || s === 'merging');
+                let badgeColor = 'bg-gray-100 text-gray-700';
+                if (s === 'merged') badgeColor = 'bg-emerald-100 text-emerald-700';
+                else if (s === 'pushed') badgeColor = 'bg-green-100 text-green-700';
+                else if (s === 'failed') badgeColor = 'bg-red-100 text-red-700';
+                else if (inFlight) badgeColor = 'bg-blue-100 text-blue-700';
+                const prLink = imp.pr_url ? `<a href="${escapeHtml(imp.pr_url)}" target="_blank" class="text-blue-600 hover:underline text-xs">View PR</a>` : '';
+                let mergeBtn = '';
+                if (s === 'pushed' && imp.pr_url) {
+                    mergeBtn = `<button type="button" onclick="mergeBulkToMain('${imp.id}')" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs hover:bg-emerald-700"><i class="fas fa-code-merge mr-1"></i>Merge to Main</button>`;
+                } else if (s === 'merging') {
+                    mergeBtn = `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-1 rounded text-xs cursor-not-allowed"><i class="fas fa-spinner fa-spin mr-1"></i>Merging…</button>`;
+                } else if (s === 'merged') {
+                    mergeBtn = `<button type="button" disabled class="bg-emerald-300 text-white px-3 py-1 rounded text-xs cursor-not-allowed"><i class="fas fa-check mr-1"></i>Merged ✓</button>`;
+                }
+                const playBtn = imp.preview_url
+                    ? `<button type="button" onclick="window.open('${escapeHtml(imp.preview_url)}', '_blank')" class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"><i class="fas fa-play mr-1"></i>Play</button>`
+                    : '';
+                const errBlock = imp.error_message ? `<div class="text-xs mt-2 text-red-700">${escapeHtml(imp.error_message)}</div>` : '';
+                const branchLine = imp.branch_name ? `<div class="text-xs text-gray-600 mt-1">Branch: <span class="font-mono">${escapeHtml(imp.branch_name)}</span></div>` : '';
+                return `
+                    <div class="border border-indigo-200 bg-indigo-50 rounded-lg p-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="font-semibold text-gray-800">Bulk implementation — ${escapeHtml(imp.repo_role || 'unknown')}</div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-semibold px-2 py-1 rounded-full ${badgeColor}">${escapeHtml(s)}${inFlight ? ' <i class="fas fa-spinner fa-spin ml-1"></i>' : ''}</span>
+                                ${prLink}
+                                ${mergeBtn}
+                                ${playBtn}
+                            </div>
+                        </div>
+                        ${branchLine}
+                        ${errBlock}
+                    </div>
+                `;
+            }).join('');
+        }
+
         function renderRemainingTasks(tasks) {
             if (!tasks.length) return '<p class="text-sm opacity-80">No remaining tasks were returned.</p>';
-            return tasks.map(task => `
+            return tasks.map(task => {
+                const buttons = renderTaskImplementButtons(task);
+                return `
                 <div class="bg-white/70 rounded border border-current/10 p-3">
                     <div class="font-semibold">${escapeHtml(task.title)}</div>
                     <div class="text-xs mt-1 opacity-80">${escapeHtml(task.description || '')}</div>
                     <div class="text-xs mt-2 opacity-80">Priority: ${escapeHtml(task.priority || 'medium')} | Area: ${escapeHtml(task.repo_role || 'unknown')}</div>
                     ${(task.acceptance_criteria || []).length ? `<div class="text-xs mt-2 opacity-80">Acceptance: ${escapeHtml(task.acceptance_criteria.join(' | '))}</div>` : ''}
                     ${task.implementation_plan_error ? `<div class="text-xs mt-2 text-red-700">${escapeHtml(task.implementation_plan_error)}</div>` : ''}
-                    <div class="mt-3">
+                    ${buttons.errBlock}
+                    <div class="mt-3 flex flex-wrap gap-2">
                         <button type="button" ${task.implementation_plan_status === 'queued' || task.implementation_plan_status === 'running' ? 'disabled' : ''} onclick="generateImplementationPlan('${task.id}')" class="bg-rose-600 disabled:bg-rose-300 text-white px-3 py-2 rounded text-xs hover:bg-rose-700">
                             ${task.implementation_plan_status === 'completed' ? 'Download Implementation Plan' : task.implementation_plan_status === 'failed' ? 'Retry Implementation Plan' : task.implementation_plan_status === 'queued' || task.implementation_plan_status === 'running' ? 'Generating Plan...' : 'Implementation Instructions Plan'}
                         </button>
+                        ${buttons.implementBtn}
+                        ${buttons.mergeBtn}
+                        ${buttons.playBtn}
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function renderAudit(audit) {
@@ -1249,6 +1443,7 @@
             const uncertainEl = document.getElementById('audit-uncertain');
             const remainingEl = document.getElementById('audit-remaining');
             const runBtn = document.getElementById('run-audit-btn');
+            const implementAllBtn = document.getElementById('implement-all-btn');
 
             if (!audit) {
                 meta.textContent = 'No audit run yet.';
@@ -1256,8 +1451,10 @@
                 implementedEl.innerHTML = '<p class="text-sm opacity-80">No findings yet.</p>';
                 uncertainEl.innerHTML = '<p class="text-sm opacity-80">No findings yet.</p>';
                 remainingEl.innerHTML = '<p class="text-sm opacity-80">No tasks yet.</p>';
+                renderBulkImplementations([]);
                 runBtn.disabled = false;
                 runBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles mr-2"></i>Run AI Audit';
+                if (implementAllBtn) implementAllBtn.disabled = true;
                 return;
             }
 
@@ -1270,19 +1467,37 @@
             const features = audit.feature_completion || [];
             implementedEl.innerHTML = renderFeatureGroup(features.filter(f => f.status === 'implemented'), 'No implemented features were captured.');
             uncertainEl.innerHTML = renderFeatureGroup(features.filter(f => f.status === 'partial' || f.status === 'uncertain'), 'No partial or unclear findings were captured.');
-            remainingEl.innerHTML = renderRemainingTasks(audit.remaining_tasks || []);
+            const remaining = audit.remaining_tasks || [];
+            remainingEl.innerHTML = renderRemainingTasks(remaining);
+            renderBulkImplementations(audit.implementations || []);
 
             runBtn.disabled = isRunning;
             runBtn.innerHTML = isRunning
                 ? '<i class="fas fa-spinner fa-spin mr-2"></i>Audit Running...'
                 : '<i class="fas fa-wand-magic-sparkles mr-2"></i>Run AI Audit';
+
+            if (implementAllBtn) {
+                const bulkInFlight = (audit.implementations || []).some(i =>
+                    ['queued', 'branching', 'coding', 'pushing'].includes(i.status)
+                );
+                const unclaimedRemaining = remaining.some(t => {
+                    const state = getTaskImplementationState(t);
+                    return !state.fromBulk && ['not_started', 'failed'].includes(state.status || 'not_started');
+                });
+                implementAllBtn.disabled = isRunning || bulkInFlight || !unclaimedRemaining;
+            }
         }
 
         function scheduleAuditPoll() {
             if (auditPollTimer) clearTimeout(auditPollTimer);
             auditPollTimer = setTimeout(async () => {
                 if (!currentProjectId) return;
-                const latestAudit = await apiCall(`/projects/${currentProjectId}/ai-audits/latest`);
+                const latestAudit = await quietFetchJson(`/projects/${currentProjectId}/ai-audits/latest`);
+                if (latestAudit === undefined) {
+                    // Transient failure — keep polling, don't clobber UI.
+                    scheduleAuditPoll();
+                    return;
+                }
                 if (latestAudit && latestAudit.status !== 'not_started') {
                     currentProjectAudit = latestAudit;
                     renderAudit(latestAudit);
@@ -1323,21 +1538,204 @@
 
         function pollImplementationPlan(taskId) {
             if (planPollTimers[taskId]) clearTimeout(planPollTimers[taskId]);
+            if (!planPollStartedAt[taskId]) planPollStartedAt[taskId] = Date.now();
             planPollTimers[taskId] = setTimeout(async () => {
-                const task = await apiCall(`/audit-tasks/${taskId}`);
-                if (!task) return;
                 await loadProjectAuditPanel();
-                if (task.implementation_plan_status === 'completed' && task.implementation_plan_available) {
+                const task = (currentProjectAudit?.remaining_tasks || []).find(t => t.id === taskId);
+                const status = task?.implementation_plan_status;
+                if (status === 'completed' && task?.implementation_plan_available) {
                     delete planPollTimers[taskId];
+                    delete planPollStartedAt[taskId];
                     window.open(`${API_BASE}/audit-tasks/${taskId}/implementation-plan/download?token=${encodeURIComponent(adminToken)}`, '_blank');
                     return;
                 }
-                if (task.implementation_plan_status === 'failed') {
+                if (status === 'failed') {
                     delete planPollTimers[taskId];
+                    delete planPollStartedAt[taskId];
+                    return;
+                }
+                if (Date.now() - planPollStartedAt[taskId] > PLAN_POLL_CAP_MS) {
+                    delete planPollTimers[taskId];
+                    delete planPollStartedAt[taskId];
                     return;
                 }
                 pollImplementationPlan(taskId);
             }, 3000);
+        }
+
+        // --- AI Audit: Branch & Implement + Play + Bulk ---
+        let auditSettleTimer = null;
+        let auditSettleStartedAt = null;
+        const AUDIT_SETTLE_CAP_MS = 10 * 60 * 1000; // ~10 minutes
+
+        async function createBranchAndImplement(taskId) {
+            try {
+                const res = await fetch(`${API_BASE}/audit-tasks/${taskId}/implement?token=${adminToken}`, {
+                    method: 'POST',
+                    body: new FormData()
+                });
+                if (res.status === 409) {
+                    let detail = 'This task is already being implemented or cannot be implemented right now.';
+                    try { detail = (await res.json()).detail || detail; } catch {}
+                    alert(detail);
+                    return;
+                }
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    alert(msg);
+                    return;
+                }
+                await loadProjectAuditPanel();
+                pollAuditUntilSettled();
+            } catch (err) {
+                console.error('createBranchAndImplement error:', err);
+                alert('Failed to start implementation.');
+            }
+        }
+
+        async function mergeTaskToMain(taskId) {
+            if (!confirm("Merge this task's PR into the default branch? The PR will be marked ready for review (if draft) and merged via squash.")) return;
+            try {
+                const res = await fetch(`${API_BASE}/audit-tasks/${taskId}/merge?token=${adminToken}`, {
+                    method: 'POST',
+                    body: new FormData()
+                });
+                if (res.status === 409) {
+                    let detail = 'Cannot merge right now.';
+                    try { detail = (await res.json()).detail || detail; } catch {}
+                    alert(detail);
+                    return;
+                }
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    alert(msg);
+                    return;
+                }
+                await loadProjectAuditPanel();
+                pollAuditUntilSettled();
+            } catch (err) {
+                console.error('mergeTaskToMain error:', err);
+                alert('Failed to start merge.');
+            }
+        }
+
+        async function mergeBulkToMain(implId) {
+            if (!confirm("Merge this bulk PR into the default branch? The PR will be marked ready for review (if draft) and merged via squash.")) return;
+            try {
+                const res = await fetch(`${API_BASE}/audit-implementations/${implId}/merge?token=${adminToken}`, {
+                    method: 'POST',
+                    body: new FormData()
+                });
+                if (res.status === 409) {
+                    let detail = 'Cannot merge right now.';
+                    try { detail = (await res.json()).detail || detail; } catch {}
+                    alert(detail);
+                    return;
+                }
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    alert(msg);
+                    return;
+                }
+                await loadProjectAuditPanel();
+                pollAuditUntilSettled();
+            } catch (err) {
+                console.error('mergeBulkToMain error:', err);
+                alert('Failed to start merge.');
+            }
+        }
+
+        async function implementAllRemaining() {
+            if (!currentProjectId || !currentProjectAudit?.id) {
+                alert('No audit available to implement.');
+                return;
+            }
+            if (!confirm("Run AI code generation across all remaining tasks? This can take several minutes and incur OpenAI cost.")) return;
+            try {
+                const res = await fetch(`${API_BASE}/projects/${currentProjectId}/ai-audits/${currentProjectAudit.id}/implement-all?token=${adminToken}`, {
+                    method: 'POST',
+                    body: new FormData()
+                });
+                if (res.status === 409) {
+                    let detail = 'Cannot start bulk implementation right now.';
+                    try { detail = (await res.json()).detail || detail; } catch {}
+                    alert(detail);
+                    return;
+                }
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    alert(msg);
+                    return;
+                }
+                await loadProjectAuditPanel();
+                pollAuditUntilSettled();
+            } catch (err) {
+                console.error('implementAllRemaining error:', err);
+                alert('Failed to start bulk implementation.');
+            }
+        }
+
+        function pollAuditUntilSettled() {
+            if (auditSettleTimer) clearTimeout(auditSettleTimer);
+            if (!auditSettleStartedAt) auditSettleStartedAt = Date.now();
+            auditSettleTimer = setTimeout(async () => {
+                if (!currentProjectId) {
+                    auditSettleTimer = null;
+                    auditSettleStartedAt = null;
+                    return;
+                }
+                const capReached = (Date.now() - auditSettleStartedAt) > AUDIT_SETTLE_CAP_MS;
+                const latestAudit = await quietFetchJson(`/projects/${currentProjectId}/ai-audits/latest`);
+                if (latestAudit === undefined) {
+                    // Transient failure — don't clobber UI, don't treat empty arrays as "settled".
+                    if (capReached) {
+                        auditSettleTimer = null;
+                        auditSettleStartedAt = null;
+                        return;
+                    }
+                    pollAuditUntilSettled();
+                    return;
+                }
+                if (latestAudit && latestAudit.status && latestAudit.status !== 'not_started') {
+                    currentProjectAudit = latestAudit;
+                    renderAudit(latestAudit);
+                }
+                const tasks = (latestAudit?.remaining_tasks) || [];
+                const implementations = (latestAudit?.implementations) || [];
+                const taskTerminalSet = new Set(['pushed', 'merged', 'failed', 'not_started']);
+                const implTerminalSet = new Set(['pushed', 'merged', 'failed']);
+                const allTasksSettled = tasks.every(t => {
+                    const state = getTaskImplementationState(t);
+                    return taskTerminalSet.has(state.status || 'not_started');
+                });
+                const allImplsSettled = implementations.every(i => implTerminalSet.has(i.status || 'queued'));
+                if ((allTasksSettled && allImplsSettled) || capReached) {
+                    auditSettleTimer = null;
+                    auditSettleStartedAt = null;
+                    return;
+                }
+                pollAuditUntilSettled();
+            }, 3000);
+        }
+
+        async function playPreview(taskId) {
+            const remaining = currentProjectAudit?.remaining_tasks || [];
+            const task = remaining.find(t => t.id === taskId);
+            if (!task) {
+                alert('Task not found in current audit.');
+                return;
+            }
+            const state = getTaskImplementationState(task);
+            if (state.preview_url) {
+                window.open(state.preview_url, '_blank');
+                return;
+            }
+            alert('No preview detected yet — try again in a moment.');
+            await loadProjectAuditPanel();
         }
 
         async function loadTasks() {
@@ -1910,53 +2308,92 @@ Date: ${today}`;
             if (await apiCall(`/documents/${docId}`, 'DELETE')) loadProjectDocuments();
         }
 
-        // --- Status (top-level view) ---
-        async function initStatusView() {
-            if (!globalProjects.length) globalProjects = await apiCall('/projects') || [];
-            populateProjectDropdown('status-project-select');
-            const dateInput = document.getElementById('status-date');
-            if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
-            loadProjectStatuses();
-        }
-
-        async function loadProjectStatuses() {
-            const tbody = document.getElementById('statuses-table-body');
-            const items = await apiCall('/statuses') || [];
-            if (!items.length) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 text-sm">No status entries yet.</td></tr>`;
+        // --- Project Status (inner tab) ---
+        async function loadProjectStatuses(projectId) {
+            const tbody = document.getElementById('status-entries-tbody');
+            if (!tbody) return;
+            const pid = projectId || currentProjectId;
+            if (!pid) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 text-sm">No project selected.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = items.map(s => `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-3 border-b text-sm text-gray-500">${escapeHtml(s.project_name || '—')}</td>
-                    <td class="p-3 border-b font-medium text-gray-700">${fmtDate(s.status_date)}</td>
-                    <td class="p-3 border-b text-gray-600 whitespace-pre-wrap">${escapeHtml(s.description)}</td>
-                    <td class="p-3 border-b text-center">
-                        <button type="button" onclick="deleteStatus('${s.id}')" class="text-gray-300 hover:text-red-500" title="Delete">
-                            <i class="fas fa-trash text-sm"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            try {
+                const res = await fetch(`${API_BASE}/projects/${pid}/statuses?token=${adminToken}`);
+                if (!res.ok) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-red-500 text-sm">Failed to load status entries (${res.status}).</td></tr>`;
+                    return;
+                }
+                const items = await res.json();
+                if (!items || !items.length) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-400 text-sm">No status entries yet.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = items.map(s => {
+                    const dateStr = s.status_date ? String(s.status_date).slice(0, 10) : '—';
+                    return `
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3 border-b font-medium text-gray-700 w-40">${escapeHtml(dateStr)}</td>
+                            <td class="p-3 border-b text-gray-600 whitespace-pre-wrap">${escapeHtml(s.description || '')}</td>
+                            <td class="p-3 border-b text-center w-20">
+                                <button type="button" onclick="deleteProjectStatus('${s.id}')" class="text-gray-300 hover:text-red-500" title="Delete">
+                                    <i class="fas fa-trash text-sm"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('loadProjectStatuses error:', err);
+                tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-red-500 text-sm">Error loading status entries.</td></tr>`;
+            }
         }
 
         async function addProjectStatus() {
-            const projectId = document.getElementById('status-project-select').value;
-            if (!projectId) { alert('Please select a project first.'); return; }
-            const status_date = document.getElementById('status-date').value;
-            const description = document.getElementById('status-description').value.trim();
+            if (!currentProjectId) { alert('No project selected.'); return; }
+            const dateEl = document.getElementById('status-entry-date');
+            const descEl = document.getElementById('status-entry-desc');
+            const status_date = dateEl.value;
+            const description = descEl.value.trim();
             if (!status_date) { alert('Status date is required.'); return; }
             if (!description) { alert('Description is required.'); return; }
-            const res = await apiCall(`/projects/${projectId}/statuses`, 'POST', { status_date, description });
-            if (res) {
-                document.getElementById('status-description').value = '';
-                loadProjectStatuses();
+            try {
+                const fd = new FormData();
+                fd.append('status_date', status_date);
+                fd.append('description', description);
+                const res = await fetch(`${API_BASE}/projects/${currentProjectId}/statuses?token=${adminToken}`, {
+                    method: 'POST',
+                    body: fd
+                });
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    alert(msg);
+                    return;
+                }
+                dateEl.value = new Date().toISOString().slice(0, 10);
+                descEl.value = '';
+                loadProjectStatuses(currentProjectId);
+            } catch (err) {
+                console.error('addProjectStatus error:', err);
+                alert('Failed to save status entry.');
             }
         }
 
-        async function deleteStatus(id) {
+        async function deleteProjectStatus(statusId) {
             if (!confirm('Delete this status entry?')) return;
-            if (await apiCall(`/statuses/${id}`, 'DELETE')) loadProjectStatuses();
+            try {
+                const res = await fetch(`${API_BASE}/statuses/${statusId}?token=${adminToken}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    let msg = `Server error (${res.status})`;
+                    try { msg = (await res.json()).detail || msg; } catch {}
+                    alert(msg);
+                    return;
+                }
+                loadProjectStatuses(currentProjectId);
+            } catch (err) {
+                console.error('deleteProjectStatus error:', err);
+                alert('Failed to delete status entry.');
+            }
         }
 
         // --- Finance (top-level view) ---
