@@ -114,7 +114,12 @@
                             <h2 id="detail-proj-name" class="text-3xl font-bold text-gray-800 mb-2">Project Name</h2>
                             <p id="detail-proj-desc" class="text-gray-500">Project description goes here.</p>
                         </div>
-                        <span id="detail-proj-status" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Active</span>
+                        <div class="flex items-center gap-3">
+                            <button type="button" id="launch-project-btn" onclick="launchProjectFrontend()" class="hidden bg-green-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-green-700">
+                                <i class="fas fa-rocket mr-1"></i> Launch
+                            </button>
+                            <span id="detail-proj-status" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Active</span>
+                        </div>
                     </div>
 
                     <div class="flex space-x-6 border-b border-gray-200 mb-6 flex-wrap">
@@ -232,6 +237,16 @@
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Backend GitHub URL</label>
                                     <input type="url" id="detail-backend-repo" class="border p-2 rounded w-full">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Frontend URL <span class="text-gray-400">(deployed site, used by Launch)</span></label>
+                                    <input type="url" id="detail-frontend-url" class="border p-2 rounded w-full" placeholder="https://example.com">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">API Base Path <span class="text-gray-400">(where the frontend calls the backend)</span></label>
+                                    <input type="url" id="detail-api-base-url" class="border p-2 rounded w-full" placeholder="https://api.example.com">
                                 </div>
                             </div>
                             <div id="project-overview-save-status" class="text-sm text-gray-500 mt-3"></div>
@@ -806,6 +821,21 @@
                 project.status === 'Active' ? 'bg-green-100 text-green-800' :
                 project.status === 'On-Hold' ? 'bg-yellow-100 text-yellow-800' :
                 'bg-gray-100 text-gray-700'}`;
+
+            const launchBtn = document.getElementById('launch-project-btn');
+            const frontendUrl = (project.frontend_url || '').trim();
+            if (frontendUrl) {
+                launchBtn.dataset.url = frontendUrl;
+                launchBtn.classList.remove('hidden');
+            } else {
+                launchBtn.dataset.url = '';
+                launchBtn.classList.add('hidden');
+            }
+        }
+
+        function launchProjectFrontend() {
+            const url = document.getElementById('launch-project-btn').dataset.url;
+            if (url) window.open(url, '_blank', 'noopener');
         }
 
         // --- THE MAGIC SIMPLE REQUEST FUNCTION ---
@@ -1128,6 +1158,8 @@
                 document.getElementById('detail-edit-objective').value = project.objective || '';
                 document.getElementById('detail-edit-narrative').value = project.narrative || '';
                 document.getElementById('detail-edit-status').value = project.status || 'Active';
+                document.getElementById('detail-frontend-url').value = project.frontend_url || '';
+                document.getElementById('detail-api-base-url').value = project.api_base_url || '';
             }
 
             const repos = await quietFetchJson(`/projects/${currentProjectId}/repositories`);
@@ -1188,7 +1220,9 @@
                 description: document.getElementById('detail-edit-description').value,
                 objective: document.getElementById('detail-edit-objective').value,
                 narrative: document.getElementById('detail-edit-narrative').value,
-                status: document.getElementById('detail-edit-status').value
+                status: document.getElementById('detail-edit-status').value,
+                frontend_url: document.getElementById('detail-frontend-url').value,
+                api_base_url: document.getElementById('detail-api-base-url').value
             };
             const projectRes = await apiCall(`/projects/${currentProjectId}`, 'PUT', payload);
             if (!projectRes) {
